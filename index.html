@@ -1,0 +1,2574 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided growth calculator — Multiplier-methode (Paley)</title>
+<style>
+  :root {
+    --ink: #1a2026;
+    --ink-soft: #4a555f;
+    --line: #d4dbe0;
+    --line-strong: #aab6bf;
+    --paper: #f6f7f5;
+    --card: #ffffff;
+    --accent: #1f5c4d;       /* diep groen, klinisch-rustig */
+    --accent-soft: #e6efeb;
+    --warn: #8a5a1a;
+    --warn-soft: #f6edde;
+    --short: #b5462f;        /* korte been markering */
+    --long: #2b5f8a;         /* lange been markering */
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  .wrap {
+    max-width: 780px !important;
+    width: 100%;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 28px 32px 80px;
+    box-sizing: border-box;
+  }
+  /* alles binnen de wrap blijft binnen die breedte */
+  .wrap > *, #output, #planStep, #planOutput { max-width: 100%; box-sizing: border-box; }
+
+  header.masthead {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 26px;
+  }
+  header.masthead .eyebrow {
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 6px;
+  }
+  header.masthead h1 {
+    font-size: 26px; margin: 0; font-weight: 700; letter-spacing: -0.01em;
+  }
+  header.masthead p { margin: 8px 0 0; color: var(--ink-soft); font-size: 14px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    margin-bottom: 18px;
+  }
+  .card > h2 {
+    font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 16px; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card > h2::before {
+    content: ""; width: 18px; height: 2px; background: var(--accent); display: inline-block;
+  }
+
+  .grid { display: grid; gap: 14px 18px; }
+  .grid.two { grid-template-columns: 1fr 1fr; }
+  .grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 620px) { .grid.two, .grid.three { grid-template-columns: 1fr; } }
+
+  label.field { display: block; font-size: 13px; }
+  label.field .lab { display: block; font-weight: 600; margin-bottom: 5px; color: var(--ink); }
+  label.field .hint { font-weight: 400; color: var(--ink-soft); font-size: 12px; }
+
+  input[type="number"], select {
+    width: 100%; padding: 9px 10px; font-size: 15px; font-family: inherit;
+    border: 1px solid var(--line-strong); border-radius: var(--radius);
+    background: #fff; color: var(--ink);
+  }
+  input[type="number"]:focus, select:focus {
+    outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent);
+  }
+  .age-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .seg-bones { }
+  .bone-head {
+    display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-soft); font-weight: 600; padding: 0 0 6px; align-items: end;
+  }
+  .bone-head .r { color: var(--long); }
+  .bone-head .l { color: var(--long); }
+  .bone-row {
+    display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px;
+    align-items: center; padding: 7px 0;
+  }
+  .bone-row + .bone-row { border-top: 1px solid var(--line); }
+  .bone-row .name { font-weight: 600; font-size: 14px; }
+
+  .radio-set { display: flex; gap: 10px; flex-wrap: wrap; }
+  .radio-set label {
+    flex: 1; min-width: 180px; border: 1px solid var(--line-strong); border-radius: var(--radius);
+    padding: 11px 13px; cursor: pointer; display: flex; gap: 10px; align-items: flex-start;
+    transition: border-color .12s, background .12s;
+  }
+  .radio-set label:hover { border-color: var(--accent); }
+  .radio-set input { margin-top: 3px; accent-color: var(--accent); }
+  .radio-set .t { font-weight: 600; font-size: 14px; }
+  .radio-set .d { font-size: 12px; color: var(--ink-soft); display: block; margin-top: 2px; }
+  .radio-set input:checked + .txt .t { color: var(--accent); }
+  .radio-set label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+
+  .conditional { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line-strong); }
+  .conditional.show { display: block; }
+
+  .toggle-inline { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; }
+
+  .note {
+    font-size: 12.5px; color: var(--ink-soft); background: var(--paper);
+    border-left: 3px solid var(--line-strong); padding: 8px 12px; border-radius: 0 var(--radius) var(--radius) 0;
+    margin-top: 10px;
+  }
+
+  .actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+  button.primary {
+    background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
+    padding: 12px 26px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  button.primary:hover { background: #18493d; }
+  button.ghost {
+    background: none; border: 1px solid var(--line-strong); border-radius: var(--radius);
+    padding: 12px 18px; font-size: 14px; cursor: pointer; font-family: inherit; color: var(--ink);
+  }
+  button.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .errors {
+    background: #fbecea; border: 1px solid #e3b5ad; color: #7d2c1c;
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 16px; font-size: 13.5px; display: none;
+  }
+  .errors.show { display: block; }
+  .errors ul { margin: 6px 0 0; padding-left: 18px; }
+
+  /* ---- output ---- */
+  #output { display: none; }
+  #output.show { display: block; }
+  .out-sec { margin-bottom: 22px; }
+  .out-sec h3 {
+    font-size: 14px; margin: 0 0 10px; font-weight: 700; color: var(--ink);
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .out-sec h3 .num {
+    font-size: 12px; color: #fff; background: var(--accent); border-radius: 4px;
+    padding: 2px 7px; font-weight: 600; letter-spacing: .03em;
+  }
+  table.data { width: 100%; border-collapse: collapse; font-size: 13.5px; display: table; }
+  .table-scroll { overflow-x: auto; }
+  table.data th, table.data td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  table.data th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); font-weight: 600; }
+  table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .headline-result {
+    background: var(--accent-soft); border: 1px solid #bcd6cd; border-radius: var(--radius);
+    padding: 16px 18px; margin: 4px 0 14px;
+  }
+  .headline-result .big { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -0.01em; }
+  .headline-result .sub { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+  .range-box {
+    background: var(--warn-soft); border: 1px solid #e0cba2; border-radius: var(--radius);
+    padding: 12px 15px; font-size: 13.5px; margin-top: 6px;
+  }
+  .range-box.danger {
+    background: #fbecea; border-color: #e3b5ad; color: #7d2c1c;
+  }
+  .range-box.good {
+    background: #e6f3ec; border-color: #a9d3ba; color: #1c5638;
+  }
+  .verify {
+    background: #f3f5f7; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px 16px; font-size: 13px; font-family: "SFMono-Regular", ui-monospace, "Menlo", monospace;
+    white-space: pre-wrap; line-height: 1.65; color: var(--ink-soft); overflow-x: auto;
+  }
+  .disclaimer {
+    font-size: 12px; color: var(--ink-soft); border-top: 1px solid var(--line);
+    margin-top: 30px; padding-top: 14px; max-width: 68ch;
+  }
+  .pill { display:inline-block; font-size:11px; font-weight:600; padding:1px 7px; border-radius:10px; }
+  .pill.short { background:#f7e3de; color:var(--short); }
+  .pill.long  { background:#dde8f1; color:var(--long); }
+  .sidebadge {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:18px; height:18px; border-radius:50%; font-size:11px; font-weight:700;
+    margin-left:6px; vertical-align:middle; line-height:1;
+  }
+  .sidebadge.R { background:var(--long); color:#fff; }
+  .sidebadge.L { background:var(--short); color:#fff; }
+  .sidebadge.sm { width:16px; height:16px; font-size:10px; }
+  .slider-row { display:flex; align-items:center; gap:12px; max-width:460px; }
+  .slider-row input[type=range] { flex:1; accent-color:var(--accent); }
+  .slider-row .numwrap { display:flex; align-items:center; gap:5px; }
+  .slider-row input[type=number] { width:80px; }
+  .slider-row .unit { font-size:13px; color:var(--ink-soft); }
+  @media print {
+    body { background: #fff; }
+    .no-print { display: none !important; }
+    .card { border-color: #ccc; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" style="max-width:780px;margin:0 auto;">
+
+  <header class="masthead">
+    <div class="eyebrow">Multiplier-methode · Paley et al. 2000</div>
+    <h1>Guided growth calculator</h1>
+    <p>Voorspelt de volwassen beenlengte bij een beenlengteverschil en berekent per segment het behandelplan: de optimale leeftijd voor een epifysiodese, beenverlenging, of een combinatie daarvan, zodat de benen op skeletmaturiteit zo gelijk mogelijk uitkomen. Voor congenitale én verworven (posttraumatische) lengteverschillen.</p>
+  </header>
+
+  <div class="errors no-print" id="errors"></div>
+
+  <!-- ============ INVOER ============ -->
+  <div class="no-print" id="form">
+
+    <div class="card">
+      <h2>Patiënt</h2>
+      <div class="grid three">
+        <label class="field">
+          <span class="lab">Geslacht</span>
+          <select id="sex">
+            <option value="boy">Jongen</option>
+            <option value="girl">Meisje</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="lab">Kalenderleeftijd <span class="hint">(jaar / mnd)</span></span>
+          <div class="age-row">
+            <input type="number" id="calY" min="0" max="17" step="1" placeholder="jr">
+            <input type="number" id="calM" min="0" max="11" step="1" placeholder="mnd">
+          </div>
+        </label>
+        <label class="field">
+          <span class="lab">Skeletleeftijd <span class="hint">(optioneel)</span></span>
+          <div class="age-row">
+            <input type="number" id="skelY" min="0" max="17" step="1" placeholder="jr">
+            <input type="number" id="skelM" min="0" max="11" step="1" placeholder="mnd">
+          </div>
+        </label>
+      </div>
+      <div class="note">Als de skeletleeftijd is ingevuld, wordt die gebruikt voor alle berekeningen (de multiplier-methode is daarop gebaseerd). Anders de kalenderleeftijd.</div>
+    </div>
+
+    <div class="card">
+      <h2>Type lengteverschil</h2>
+      <div class="radio-set">
+        <label>
+          <input type="radio" name="ctype" value="congenital" checked>
+          <span class="txt"><span class="t">Congenitaal</span><span class="d">Aangeboren verschil. Verhouding blijft constant. Eén meetmoment volstaat.</span></span>
+        </label>
+        <label>
+          <input type="radio" name="ctype" value="acquired">
+          <span class="txt"><span class="t">Verworven</span><span class="d">Na fractuur, groeischijfletsel, infectie, polio. Het korte been groeit vertraagd.</span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Huidige metingen</h2>
+      <div class="grid">
+        <label class="field" style="max-width:220px">
+          <span class="lab">Eenheid</span>
+          <select id="unit">
+            <option value="mm">millimeter (mm)</option>
+            <option value="cm">centimeter (cm)</option>
+          </select>
+        </label>
+      </div>
+      <div class="seg-bones" style="margin-top:14px">
+        <div class="bone-head">
+          <div>Segment</div><div class="r">Rechts</div><div class="l">Links</div>
+        </div>
+        <div class="bone-row">
+          <div class="name">Femur</div>
+          <input type="number" id="femR" min="0" step="any" placeholder="lengte">
+          <input type="number" id="femL" min="0" step="any" placeholder="lengte">
+        </div>
+        <div class="bone-row">
+          <div class="name">Tibia</div>
+          <input type="number" id="tibR" min="0" step="any" placeholder="lengte">
+          <input type="number" id="tibL" min="0" step="any" placeholder="lengte">
+        </div>
+      </div>
+      <div class="note">De tool bepaalt zelf welk been korter is. Femur en tibia worden apart beoordeeld; ook het totale been (femur + tibia) wordt berekend.</div>
+    </div>
+
+    <!-- verworven blok -->
+    <div class="card" id="acquiredCard" style="display:none">
+      <h2>Groeiprognose aangedaan been</h2>
+
+      <div class="toggle-inline" style="margin-bottom:8px">
+        <span class="lab" style="font-weight:600;font-size:13px">Waar zit het verschil?</span>
+      </div>
+      <div class="radio-set" id="acqSubtypeSet" style="margin-bottom:6px">
+        <label>
+          <input type="radio" name="acqSubtype" value="physis" checked>
+          <span class="txt"><span class="t">Groeischijf aangedaan</span><span class="d">Na groeischijfletsel, infectie, Ollier of bestraling. Het korte been groeit vertraagd (groeiremming).</span></span>
+        </label>
+        <label>
+          <input type="radio" name="acqSubtype" value="shaft">
+          <span class="txt"><span class="t">Midschachtfractuur — groeischijf intact (0% remming)</span><span class="d">Het verschil zit in de schacht, niet in de fyse. Beide benen groeien normaal door.</span></span>
+        </label>
+      </div>
+      <div class="note" id="shaftNote" style="margin-bottom:14px;display:none">
+        <strong>Zit het verschil in de schacht of in de groeischijf?</strong> Bij een midschachtfractuur zit het tekort in de reeds gevormde schacht (diafyse), die niet meer groeit. De groeischijven zijn intact en produceren links en rechts dezelfde absolute restgroei. Beide benen krijgen er dus evenveel centimeter bij en het lengteverschil blijft constant — het groeit niet proportioneel mee zoals bij een aangeboren verschil. De tool houdt het verschil daarom gelijk (0% groeiremming).
+      </div>
+
+      <div id="physisInputs">
+      <div class="toggle-inline">
+        <span class="lab" style="font-weight:600;font-size:13px">Eerdere meting beschikbaar?</span>
+      </div>
+      <div class="radio-set">
+        <label>
+          <input type="radio" name="prior" value="yes">
+          <span class="txt"><span class="t">Ja — meerdere metingen</span><span class="d">Groei-inhibitie wordt berekend uit het werkelijke groeiverschil over tijd (trend over alle metingen). Nauwkeurigst.</span></span>
+        </label>
+        <label>
+          <input type="radio" name="prior" value="no" checked>
+          <span class="txt"><span class="t">Nee — schatting</span><span class="d">Schat de groei-inhibitie. De tool toont dan een ruimere onzekerheidsmarge.</span></span>
+        </label>
+      </div>
+
+      <!-- ja: eerdere meting -->
+      <div class="conditional" id="priorYes">
+        <div class="grid two" style="margin-bottom:14px">
+          <label class="field">
+            <span class="lab">Welke groeischijf is beschadigd?</span>
+            <select id="damagedPhysisPrior">
+              <option value="distalFemur">Distale femur</option>
+              <option value="proximalFemur">Proximale femur</option>
+              <option value="proximalTibia">Proximale tibia</option>
+              <option value="distalTibia">Distale tibia</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="lab">Aan welke zijde?</span>
+            <select id="damagedSidePrior">
+              <option value="auto">Automatisch (kortere been)</option>
+              <option value="left">Links</option>
+              <option value="right">Rechts</option>
+            </select>
+          </label>
+        </div>
+        <div class="note" style="margin-top:-6px;margin-bottom:12px">Voer één of meer eerdere metingen in (oudste eerst). De groeiremming wordt berekend uit de gemeten groei; de beschadigde fyse hoeft daarvoor niet bekend te zijn. Bij drie of meer metingen (de huidige meegeteld) toont de tool ook een groeigrafiek.</div>
+
+        <!-- dynamische lijst van eerdere metingen -->
+        <div id="priorMeasures"></div>
+        <button type="button" class="ghost" id="addPriorBtn" style="margin-top:4px">+ Nog een meting invullen</button>
+        <div class="note" style="margin-top:10px"><strong>De metingen mogen in willekeurige volgorde worden ingevoerd</strong> — de tool sorteert ze zelf op leeftijd. Elke meting heeft een eigen leeftijd; kies per meting of die een skelet- of kalenderleeftijd is. De remming wordt berekend uit de verhouding tussen de groei van het aangedane en het gezonde been over dezelfde periode en is ongevoelig voor dat onderscheid. Over meerdere metingen wordt de trend (gewogen gemiddelde remming over alle intervallen) gebruikt.</div>
+      </div>
+
+      <!-- nee: schatting -->
+      <div class="conditional show" id="priorNo">
+        <div class="grid two" style="margin-bottom:14px">
+          <label class="field">
+            <span class="lab">Welke groeischijf is beschadigd?</span>
+            <select id="damagedPhysis">
+              <option value="distalFemur">Distale femur</option>
+              <option value="proximalFemur">Proximale femur</option>
+              <option value="proximalTibia">Proximale tibia</option>
+              <option value="distalTibia">Distale tibia</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="lab">Aan welke zijde?</span>
+            <select id="damagedSide">
+              <option value="auto">Automatisch (kortere been)</option>
+              <option value="left">Links</option>
+              <option value="right">Rechts</option>
+            </select>
+          </label>
+        </div>
+        <label class="field" style="max-width:420px">
+          <span class="lab">Resterende groei van de beschadigde fyse</span>
+          <select id="restMode">
+            <option value="dead">Geen restgroei — fyse volledig gesloten</option>
+            <option value="uncertain" selected>Onzeker — restgroei onbekend</option>
+          </select>
+        </label>
+        <div class="note">Na een fractuur, infectie of andere beschadiging is de werkelijke restgroei van een groeischijf vaak niet zeker. Bij <strong>"onzeker"</strong> toont de tool een leeftijdsvenster tussen de twee uitersten (volledig gesloten versus normaal doorgroeiend), zodat je de spreiding ziet in plaats van één schijnzekere leeftijd. Een niet-aangedaan bot groeit normaal door.</div>
+      </div>
+      </div><!-- /physisInputs -->
+    </div>
+
+      <div class="actions" style="margin-top:18px">
+        <button class="primary" id="calcBtn">Bereken prognose</button>
+        <button class="ghost" id="resetBtn">Wissen</button>
+      </div>
+    </div>
+
+  <!-- ============ OUTPUT (prognose) ============ -->
+  <div id="output"></div>
+
+  <!-- ============ STAP 2: PLANNEN (verschijnt na Bereken) ============ -->
+  <div class="no-print" id="planStep" style="display:none">
+
+    <div class="card">
+      <h2>Behandelplan</h2>
+      <label class="field" style="max-width:460px">
+        <span class="lab">Wat wil je plannen?</span>
+        <select id="planStrategy">
+          <option value="epi">Alleen epifysiodese (groei afremmen)</option>
+          <option value="lengthen">Alleen beenverlenging (PRECICE)</option>
+          <option value="combined">Combinatie: verlengen + remmen</option>
+        </select>
+      </label>
+
+      <!-- Fyse-keuze: alleen bij epi-only strategie -->
+      <div class="conditional" id="physisWrap">
+        <label class="field" style="margin-top:14px">
+          <span class="lab">Welke groeischijf/schijven remmen? <span class="hint">(lange zijde — vink aan wat je op één moment wilt behandelen)</span></span>
+        </label>
+        <div class="radio-set" id="physisSet" style="flex-direction:column;gap:8px">
+          <label><input type="checkbox" name="physisCb" value="distalFemur" checked>
+            <span class="txt"><span class="t">Distale femur</span><span class="d">± 10 mm/jr · 71% van de femurgroei.</span></span></label>
+          <label><input type="checkbox" name="physisCb" value="proximalTibia" checked>
+            <span class="txt"><span class="t">Proximale tibia</span><span class="d">± 6 mm/jr · 57% van de tibiagroei.</span></span></label>
+          <label><input type="checkbox" name="physisCb" value="distalTibia">
+            <span class="txt"><span class="t">Distale tibia</span><span class="d">± 5 mm/jr · 43% van de tibiagroei.</span></span></label>
+        </div>
+        <div class="note" id="physisNote" style="margin-top:8px">Alle aangevinkte fyses worden op één gezamenlijk moment geremd; de tool berekent die skeletleeftijd en toont per fyse hoeveel cm die wegneemt. Meer fyses aanvinken = meer remcapaciteit, nuttig bij weinig resterende groei.</div>
+      </div>
+
+      <!-- Verlengen: bot-keuze (bij 'lengthen' en 'combined') -->
+      <div class="conditional" id="lengthenBoneWrap">
+        <label class="field" style="margin-top:14px">
+          <span class="lab">Welk bot verlengen? <span class="hint">(korte zijde)</span></span>
+        </label>
+        <div class="radio-set" id="lengthenBoneSet" style="flex-direction:column;gap:8px">
+          <label><input type="radio" name="lengthenBone" value="femur" checked>
+            <span class="txt"><span class="t">Femur</span><span class="d">Gunstiger risicoprofiel; tot ± 8 cm per sessie.</span></span></label>
+          <label><input type="radio" name="lengthenBone" value="tibia">
+            <span class="txt"><span class="t">Tibia</span><span class="d">Hoger complicatierisico; tot ± 5 cm per sessie.</span></span></label>
+        </div>
+      </div>
+
+      <!-- Hoeveel verlengen (alleen bij combinatie: je bepaalt zelf de verdeling) -->
+      <div class="conditional" id="lengthenAmountWrap">
+        <label class="field" style="max-width:460px;margin-top:14px">
+          <span class="lab">Hoeveel verlengen?</span>
+          <div class="slider-row">
+            <input type="range" id="planLengthenRange" min="0" max="12" step="0.5" value="4">
+            <div class="numwrap"><input type="number" id="planLengthenVal" min="0" max="24" step="0.1" value="4"><span class="unit">cm</span></div>
+          </div>
+        </label>
+        <div class="note">Jij bepaalt hoeveel cm je verlengt; de epifysiodese in het andere bot vangt de rest op. De tool berekent op welke skeletleeftijd die remming moet plaatsvinden.</div>
+      </div>
+
+      <!-- Remmen: bot-keuze (bij 'combined') -->
+      <div class="conditional" id="epiBoneWrap">
+        <label class="field" style="margin-top:14px">
+          <span class="lab">Welk bot remmen? <span class="hint">(lange zijde, epifysiodese)</span></span>
+        </label>
+        <div class="radio-set" id="epiBoneSet" style="flex-direction:column;gap:8px">
+          <label><input type="radio" name="epiBone" value="proximalTibia" checked>
+            <span class="txt"><span class="t">Proximale tibia</span><span class="d">57% van de tibiagroei.</span></span></label>
+          <label><input type="radio" name="epiBone" value="distalFemur">
+            <span class="txt"><span class="t">Distale femur</span><span class="d">71% van de femurgroei.</span></span></label>
+          <label><input type="radio" name="epiBone" value="bothKnee">
+            <span class="txt"><span class="t">Beide fyses rond de knie</span><span class="d">Distale femur + proximale tibia samen (67%).</span></span></label>
+        </div>
+      </div>
+
+      <label class="field" style="max-width:460px;margin-top:16px">
+        <span class="lab">Geaccepteerd eindverschil</span>
+        <div class="slider-row">
+          <input type="range" id="planAcceptRange" min="0" max="4" step="0.1" value="1">
+          <div class="numwrap"><input type="number" id="planAcceptVal" min="0" max="10" step="0.1" value="1"><span class="unit">cm</span></div>
+        </div>
+      </label>
+      <div class="note">Volledige gelijkheid is niet altijd haalbaar of nodig. Tot ± 1,5 cm verschil is meestal asymptomatisch.</div>
+
+      <div class="conditional" id="planResidualWrap">
+        <label class="field" style="max-width:460px;margin-top:14px">
+          <span class="lab">Omgaan met verschil in het niet-behandelde segment</span>
+          <select id="planResidualMode">
+            <option value="leave">Behandelde bot gelijk maken — rest mag in ander segment blijven</option>
+            <option value="compensate">Totale been gelijk maken — compenseer ander segment via het behandelde bot</option>
+          </select>
+        </label>
+        <div class="note">Zit er nog een verschil in het andere segment, dan kun je óf het behandelde bot exact gelijk maken (restverschil blijft in het andere segment), óf het bewust bij-/overcorrigeren zodat het totale been gelijk wordt. Die tweede keuze geeft een waarschuwing bij overcorrectie.</div>
+      </div>
+
+      <div class="actions" style="margin-top:18px">
+        <button class="primary" id="planBtn">Toon behandelplan</button>
+      </div>
+    </div>
+
+    <div id="planOutput"></div>
+  </div>
+
+  <div class="disclaimer">
+    Dit is een rekenhulpmiddel op basis van de multiplier-methode (Paley et&nbsp;al., J&nbsp;Bone Joint Surg Am 2000;82:1432-46) en vervangt geen klinisch oordeel. De methode kent een voorspelfout in de orde van enkele centimeters (95%-betrouwbaarheidsinterval). Fyse-aandelen: distale femur 71% · proximale femur 29% · proximale tibia 57% · distale tibia 43%. Er worden geen gegevens opgeslagen of verzonden; alle berekeningen gebeuren in de browser.
+  </div>
+
+  <div style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:18px;padding-top:14px">
+    © H. Zijlstra, MD, PhD
+  </div>
+
+</div>
+
+<script>
+/* ===================== MULTIPLIER-DATA (Paley 2000) ===================== */
+const MULTIPLIER_TABLE = [
+  { m:0,boy:5.080,girl:4.630},{m:3,boy:4.550,girl:4.355},{m:6,boy:4.050,girl:3.725},
+  { m:9,boy:3.600,girl:3.300},{m:12,boy:3.240,girl:2.970},{m:15,boy:2.975,girl:2.750},
+  { m:18,boy:2.825,girl:2.600},{m:21,boy:2.700,girl:2.490},{m:24,boy:2.590,girl:2.390},
+  { m:27,boy:2.480,girl:2.295},{m:30,boy:2.385,girl:2.200},{m:33,boy:2.300,girl:2.125},
+  { m:36,boy:2.230,girl:2.050},{m:42,boy:2.110,girl:1.925},{m:48,boy:2.000,girl:1.830},
+  { m:54,boy:1.890,girl:1.740},{m:60,boy:1.820,girl:1.660},{m:66,boy:1.740,girl:1.580},
+  { m:72,boy:1.670,girl:1.510},{m:78,boy:1.620,girl:1.460},{m:84,boy:1.570,girl:1.430},
+  { m:90,boy:1.520,girl:1.370},{m:96,boy:1.470,girl:1.330},{m:102,boy:1.420,girl:1.290},
+  { m:108,boy:1.380,girl:1.260},{m:114,boy:1.340,girl:1.220},{m:120,boy:1.310,girl:1.190},
+  { m:126,boy:1.280,girl:1.160},{m:132,boy:1.240,girl:1.130},{m:138,boy:1.220,girl:1.100},
+  { m:144,boy:1.180,girl:1.070},{m:150,boy:1.160,girl:1.050},{m:156,boy:1.130,girl:1.030},
+  { m:162,boy:1.100,girl:1.010},{m:168,boy:1.080,girl:1.000},{m:174,boy:1.060,girl:1.000},
+  { m:180,boy:1.040,girl:1.000},{m:186,boy:1.020,girl:1.000},{m:192,boy:1.010,girl:1.000},
+  { m:198,boy:1.010,girl:1.000},{m:204,boy:1.000,girl:1.000}
+];
+const PHYSIS = { distalFemur:0.71, proximalTibia:0.57, bothKnee:0.67 };
+// Individuele fyse-aandelen per bot (voor het aangedane been):
+const BONE_SHARE = {
+  femur: { distalFemur:0.71, proximalFemur:0.29 },
+  tibia: { proximalTibia:0.57, distalTibia:0.43 }
+};
+// Benaderde groeisnelheid per fyse (mm per jaar, nabij de groeispurt) — Menelaus/Diméglio.
+// Hieruit volgen de aandelen hierboven: femur 10/(10+4)=71%, tibia 6/(6+5)=55% (afgerond 57%).
+const MENELAUS_MM = { distalFemur:10, proximalFemur:4, proximalTibia:6, distalTibia:5 };
+// Tot welk bot hoort een fyse?
+const PHYSIS_BONE = { distalFemur:"femur", proximalFemur:"femur", proximalTibia:"tibia", distalTibia:"tibia" };
+const MATURITY_MONTHS = 204; // 17 jr; multiplier = 1.000
+
+// Aanbevolen venster voor contralaterale (remmende) epifysiodese: rond de puberteits-
+// groeispurt. Literatuur: piekgroeisnelheid been op skeletleeftijd ~12 jr (meisjes) /
+// ~14 jr (jongens); epifysiodese gangbaar rond puberteit + 1 jr. Te vroeg ingrijpen
+// offert te veel totale beenlengte op (korte femora én tibiae). Richtwaarde, geen harde grens.
+const EPI_MIN_SKELETAL_MONTHS = { boy: 12*12, girl: 10*12 };   // waaronder we waarschuwen
+const EPI_TYPICAL_SKELETAL_MONTHS = { boy: 14*12, girl: 12*12 }; // typische timing (piekgroei)
+
+// PRECICE-verlenging: veilige grenzen per segment (mm) en risicostratificatie (mm totaal).
+// Bron: Paley Institute (The Precice), heightlengthening.com. Femur tot ~8 cm, tibia tot ~5 cm
+// per sessie. Risico: ≤5 cm laag, 5–8 cm middel, >8 cm hoog. Spreid grote verschillen over
+// femur (eerst) en tibia (tweede), elk ~5 cm, i.p.v. één bot fors verlengen.
+const LENGTHEN = {
+  femurMaxMM: 80, tibiaMaxMM: 50,
+  lowRiskMM: 50, medRiskMM: 80
+};
+// Behandelplanner: drempels en PRECICE-parameters.
+const PLAN = {
+  equalThresholdMM: 10,    // ≤ 1 cm verschil = segment geldt als gelijk, geen ingreep
+  preciceSessionMM: 80,    // max verlenging per PRECICE-sessie (8 cm)
+  epiMaxMM: 40,            // epifysiodese neemt max ~4 cm voor zijn rekening
+  settleDays: 14,          // 2 weken settelen na inbrengen
+  rateMMperDay: 0.75       // gemiddelde distractiesnelheid
+};
+// Geschatte verlengingsduur (distractiefase) voor een gegeven verlenging in mm.
+function lengtheningDurationDays(mm){
+  return PLAN.settleDays + Math.ceil(mm / PLAN.rateMMperDay);
+}
+function daysToWeeks(d){ return (d/7).toFixed(0); }
+function lengthenRisk(mm){
+  if(mm<=LENGTHEN.lowRiskMM) return {label:"laag risico", cls:"ok"};
+  if(mm<=LENGTHEN.medRiskMM) return {label:"middelhoog risico", cls:"warn"};
+  return {label:"hoog risico", cls:"high"};
+}
+// Verdeel een benodigde verlenging over femur en tibia volgens het spreidingsadvies.
+function planLengthening(neededMM){
+  // probeer eerst alles in de femur (tot femurMax), dan tibia.
+  if(neededMM<=LENGTHEN.femurMaxMM && neededMM<=LENGTHEN.lowRiskMM){
+    return [{bone:"femur", mm:neededMM}];
+  }
+  if(neededMM<=LENGTHEN.femurMaxMM){
+    // past in femur maar boven laag-risico: overweeg spreiden
+    const half = neededMM/2;
+    if(half<=LENGTHEN.tibiaMaxMM)
+      return [{bone:"femur", mm:half},{bone:"tibia", mm:half}];
+    return [{bone:"femur", mm:neededMM}];
+  }
+  // groter dan femurMax: spreiden, femur eerst
+  let fem = Math.min(neededMM, LENGTHEN.femurMaxMM);
+  let rest = neededMM - fem;
+  // herbalanceer richting ~gelijk als dat onder de tibialimiet kan
+  if(rest<=LENGTHEN.tibiaMaxMM){
+    const half=neededMM/2;
+    if(half<=LENGTHEN.femurMaxMM && half<=LENGTHEN.tibiaMaxMM)
+      return [{bone:"femur", mm:half},{bone:"tibia", mm:half}];
+    return [{bone:"femur", mm:fem},{bone:"tibia", mm:rest}];
+  }
+  return [{bone:"femur", mm:fem},{bone:"tibia", mm:rest}]; // rest kan tibialimiet overschrijden -> gemarkeerd
+}
+
+// Effectieve groeifactor van een bot wanneer één fyse beschadigd is (restfunctie f, 0..1).
+// Een bot waarin de beschadigde fyse niet zit, groeit normaal door (factor 1).
+function boneGrowthFactor(bone, damagedPhysis, f){
+  if(bone==="totale been"){
+    // benadering: de beschadigde fyse beïnvloedt alleen zijn eigen bot; voor de
+    // totale-been-modus passen we de factor toe op het bot waar de fyse in zit.
+    // (de aanroeper rekent femur en tibia gecombineerd; hier geven we normaal terug
+    //  en wordt de damage op botniveau elders verrekend)
+    return 1;
+  }
+  if(PHYSIS_BONE[damagedPhysis] !== bone) return 1;
+  const shares = BONE_SHARE[bone];
+  let factor = 0;
+  for(const ph in shares){
+    factor += (ph===damagedPhysis ? f : 1) * shares[ph];
+  }
+  return factor;
+}
+
+function multiplierAt(months, sex){
+  const k = sex==="girl" ? "girl":"boy";
+  const t = MULTIPLIER_TABLE;
+  if(months<=t[0].m) return t[0][k];
+  if(months>=t[t.length-1].m) return t[t.length-1][k];
+  for(let i=0;i<t.length-1;i++){
+    if(months>=t[i].m && months<=t[i+1].m){
+      const f=(months-t[i].m)/(t[i+1].m-t[i].m);
+      return t[i][k]+f*(t[i+1][k]-t[i][k]);
+    }
+  }
+  return t[t.length-1][k];
+}
+// Geeft de interpolatie-details terug zodat de berekening navolgbaar is:
+// de twee omliggende tabelwaardes (op hele leeftijden) en hoe daartussen is geïnterpoleerd.
+function multiplierDetail(months, sex){
+  const k = sex==="girl" ? "girl":"boy";
+  const t = MULTIPLIER_TABLE;
+  const val = multiplierAt(months, sex);
+  if(months<=t[0].m || months>=t[t.length-1].m)
+    return { val, interpolated:false };
+  for(let i=0;i<t.length-1;i++){
+    if(months>=t[i].m && months<=t[i+1].m){
+      if(months===t[i].m || months===t[i+1].m) return { val, interpolated:false };
+      const f=(months-t[i].m)/(t[i+1].m-t[i].m);
+      return { val, interpolated:true,
+        loM:t[i].m, loV:t[i][k], hiM:t[i+1].m, hiV:t[i+1][k], f };
+    }
+  }
+  return { val, interpolated:false };
+}
+function monthsToLabel(months){
+  const y=Math.floor(months/12), mo=Math.round(months-y*12);
+  if(mo===0) return `${y} jaar`;
+  return `${y} jaar ${mo} mnd`;
+}
+// SVG-groeigrafiek: lengte (cm) van kort en lang been uitgezet tegen leeftijd.
+// history: [{months, short, long}] in mm, oplopend in leeftijd.
+function growthChartSVG(history, shortSideLabel, longSideLabel){
+  const W=560, H=300, mL=52, mR=16, mT=16, mB=42;
+  const pw=W-mL-mR, ph=H-mT-mB;
+  const months = history.map(p=>p.months);
+  const vals = history.flatMap(p=>[p.short/10, p.long/10]);
+  const xMin=Math.min(...months), xMax=Math.max(...months);
+  let yMin=Math.min(...vals), yMax=Math.max(...vals);
+  const pad=(yMax-yMin)*0.1 || 2; yMin-=pad; yMax+=pad;
+  const xr=xMax-xMin || 1, yr=yMax-yMin || 1;
+  const X=m=>mL + (m-xMin)/xr*pw;
+  const Y=v=>mT + (1-(v-yMin)/yr)*ph;
+  function path(key){
+    return history.map((p,i)=>`${i===0?'M':'L'}${X(p.months).toFixed(1)} ${Y(p[key]/10).toFixed(1)}`).join(' ');
+  }
+  function dots(key,color){
+    return history.map(p=>`<circle cx="${X(p.months).toFixed(1)}" cy="${Y(p[key]/10).toFixed(1)}" r="3.5" fill="${color}"/>`).join('');
+  }
+  // x-ticks per meetpunt, y-ticks 4 stuks
+  let xticks="";
+  history.forEach(p=>{
+    const x=X(p.months);
+    xticks += `<line x1="${x.toFixed(1)}" y1="${mT+ph}" x2="${x.toFixed(1)}" y2="${mT+ph+4}" stroke="#bbb"/>`+
+      `<text x="${x.toFixed(1)}" y="${mT+ph+16}" font-size="10" fill="#666" text-anchor="middle">${monthsToLabel(p.months).replace(' jaar','j').replace(' mnd','m')}</text>`;
+  });
+  let yticks="";
+  for(let i=0;i<=4;i++){
+    const v=yMin+(yr*i/4), y=Y(v);
+    yticks += `<line x1="${mL-4}" y1="${y.toFixed(1)}" x2="${mL+pw}" y2="${y.toFixed(1)}" stroke="#eee"/>`+
+      `<text x="${mL-8}" y="${(y+3).toFixed(1)}" font-size="10" fill="#666" text-anchor="end">${v.toFixed(0)}</text>`;
+  }
+  const cLong="#1f7a5a", cShort="#c0603a";
+  return `<div style="margin-top:14px">
+    <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px">Groeigrafiek — totale beenlengte over tijd</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;font-family:system-ui,sans-serif">
+      ${yticks}${xticks}
+      <path d="${path('long')}" fill="none" stroke="${cLong}" stroke-width="2"/>
+      <path d="${path('short')}" fill="none" stroke="${cShort}" stroke-width="2"/>
+      ${dots('long',cLong)}${dots('short',cShort)}
+      <text x="${mL}" y="${H-4}" font-size="10" fill="#666">leeftijd →</text>
+      <text transform="translate(12 ${mT+ph/2}) rotate(-90)" font-size="10" fill="#666" text-anchor="middle">lengte (cm)</text>
+    </svg>
+    <div style="font-size:12px;color:var(--ink-soft);margin-top:2px">
+      <span style="color:${cLong};font-weight:600">—</span> lang been (${longSideLabel}) &nbsp;&nbsp;
+      <span style="color:${cShort};font-weight:600">—</span> kort been (${shortSideLabel}).
+      Lopen de lijnen parallel, dan groeit het aangedane been normaal mee (weinig remming); wijken ze uiteen, dan loopt het verschil op.
+    </div>
+  </div>`;
+}
+// Label voor een berekende (skelet)leeftijd. Als zowel skelet- als kalenderleeftijd
+// is ingevuld en ze verschillen, wordt de kalendervertaling erbij getoond.
+// ctx: {skel, cal} in maanden (of null).
+function ageLabelSkeletal(months, ctx){
+  const usedSkeletal = ctx && ctx.skel!=null;
+  if(!usedSkeletal){
+    return `${monthsToLabel(months)} <span style="color:var(--ink-soft)">(kalenderleeftijd)</span>`;
+  }
+  let s = `${monthsToLabel(months)} <span style="color:var(--ink-soft)">skeletleeftijd</span>`;
+  if(ctx.cal!=null && ctx.cal!==ctx.skel){
+    const offset = ctx.cal - ctx.skel; // kalender loopt hierop voor/achter
+    const calMonths = months + offset;
+    s += ` <span style="color:var(--ink-soft)">≈ ${monthsToLabel(calMonths)} kalenderleeftijd</span>`;
+  }
+  return s;
+}
+
+/* ===================== UI WIRING ===================== */
+const $ = id => document.getElementById(id);
+const ctypeRadios = document.getElementsByName("ctype");
+const priorRadios = document.getElementsByName("prior");
+
+const acqSubtypeRadios = document.getElementsByName("acqSubtype");
+function currentAcqSubtype(){
+  const r=[...acqSubtypeRadios].find(x=>x.checked);
+  return r ? r.value : "physis";
+}
+function refreshConditionals(){
+  const ctype = [...ctypeRadios].find(r=>r.checked).value;
+  $("acquiredCard").style.display = ctype==="acquired" ? "block":"none";
+  const prior = [...priorRadios].find(r=>r.checked).value;
+  $("priorYes").classList.toggle("show", prior==="yes");
+  $("priorNo").classList.toggle("show", prior==="no");
+  // midschacht: geen meting-invoer nodig (0% remming per definitie)
+  const subtype = currentAcqSubtype();
+  const isShaft = subtype==="shaft";
+  $("shaftNote").style.display = isShaft ? "block":"none";
+  $("physisInputs").style.display = isShaft ? "none":"block";
+}
+[...ctypeRadios].forEach(r=>r.addEventListener("change",refreshConditionals));
+[...priorRadios].forEach(r=>r.addEventListener("change",refreshConditionals));
+[...acqSubtypeRadios].forEach(r=>r.addEventListener("change",refreshConditionals));
+refreshConditionals();
+
+// ===== Dynamische eerdere metingen =====
+let priorMeasureSeq = 0;
+function priorMeasureHTML(idx){
+  return `<div class="prior-measure" data-idx="${idx}" style="border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px;background:var(--bg-soft,#fafafa)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong style="font-size:13px;color:var(--accent)">Eerdere meting</strong>
+      <button type="button" class="ghost removePrior" data-idx="${idx}" style="padding:2px 10px;font-size:12px">Verwijderen</button>
+    </div>
+    <div class="grid three" style="margin-bottom:12px">
+      <label class="field">
+        <span class="lab">Leeftijd <span class="hint">(jr / mnd)</span></span>
+        <div class="age-row">
+          <input type="number" class="pmY" min="0" max="17" step="1" placeholder="jr">
+          <input type="number" class="pmM" min="0" max="11" step="1" placeholder="mnd">
+        </div>
+      </label>
+      <label class="field">
+        <span class="lab">Dit is een…</span>
+        <select class="pmType">
+          <option value="skeletal">Skeletleeftijd</option>
+          <option value="calendar" selected>Kalenderleeftijd</option>
+        </select>
+      </label>
+    </div>
+    <div class="bone-head"><div>Lengte</div><div class="r">Rechts</div><div class="l">Links</div></div>
+    <div class="bone-row">
+      <div class="name">Femur</div>
+      <input type="number" class="pmFemR" min="0" step="any" placeholder="lengte">
+      <input type="number" class="pmFemL" min="0" step="any" placeholder="lengte">
+    </div>
+    <div class="bone-row">
+      <div class="name">Tibia</div>
+      <input type="number" class="pmTibR" min="0" step="any" placeholder="lengte">
+      <input type="number" class="pmTibL" min="0" step="any" placeholder="lengte">
+    </div>
+  </div>`;
+}
+function addPriorMeasure(){
+  const c = $("priorMeasures");
+  const wrap = document.createElement("div");
+  wrap.innerHTML = priorMeasureHTML(priorMeasureSeq++);
+  const node = wrap.firstElementChild;
+  c.appendChild(node);
+  node.querySelector(".removePrior").addEventListener("click", ()=>{
+    node.remove();
+    updateRemoveButtons();
+  });
+  updateRemoveButtons();
+}
+function updateRemoveButtons(){
+  // altijd minstens één meting laten staan bij 'eerdere meting = ja'
+  const rows = document.querySelectorAll("#priorMeasures .prior-measure");
+  rows.forEach(r=>{
+    const btn = r.querySelector(".removePrior");
+    btn.style.visibility = rows.length<=1 ? "hidden" : "visible";
+  });
+}
+// verzamel alle eerdere metingen, gesorteerd op leeftijd (oplopend)
+function collectPriorMeasures(unit){
+  const rows = [...document.querySelectorAll("#priorMeasures .prior-measure")];
+  const out = [];
+  rows.forEach(r=>{
+    const y = r.querySelector(".pmY").value, mo = r.querySelector(".pmM").value;
+    const months = (y===""&&mo==="") ? null : (parseInt(y||"0",10)*12 + parseInt(mo||"0",10));
+    const type = r.querySelector(".pmType").value;
+    const femR = r.querySelector(".pmFemR").value, femL = r.querySelector(".pmFemL").value;
+    const tibR = r.querySelector(".pmTibR").value, tibL = r.querySelector(".pmTibL").value;
+    out.push({ months, type,
+      femR: femR===""?null:toMM(parseFloat(femR),unit), femL: femL===""?null:toMM(parseFloat(femL),unit),
+      tibR: tibR===""?null:toMM(parseFloat(tibR),unit), tibL: tibL===""?null:toMM(parseFloat(tibL),unit) });
+  });
+  return out.sort((a,b)=> (a.months??0)-(b.months??0));
+}
+$("addPriorBtn").addEventListener("click", addPriorMeasure);
+// start met één lege meting
+addPriorMeasure();
+
+// koppel sliders aan invulvelden (tweerichtings)
+function linkSlider(rangeId, numId){
+  const r=$(rangeId), n=$(numId);
+  if(!r||!n) return;
+  r.addEventListener("input",()=>{ n.value=r.value; });
+  n.addEventListener("input",()=>{ if(n.value!=="") r.value=n.value; });
+}
+
+// behandelplan (stap 2)
+const planStrategyEl = $("planStrategy");
+const physisCheckboxes = document.getElementsByName("physisCb");
+const lengthenBoneRadios = document.getElementsByName("lengthenBone");
+const epiBoneRadios = document.getElementsByName("epiBone");
+// Welke fyses zijn aangevinkt om te remmen (epi-only)? Lijst van sleutels.
+function currentInhibitPhyses(){
+  return [...physisCheckboxes].filter(x=>x.checked).map(x=>x.value);
+}
+// Horen alle aangevinkte fyses bij hetzelfde bot? (bepaalt of de residu-vraag zin heeft)
+function inhibitBonesSet(){
+  return new Set(currentInhibitPhyses().map(p=>PHYSIS_BONE[p]));
+}
+function currentLengthenBone(){
+  const r=[...lengthenBoneRadios].find(x=>x.checked);
+  return r ? r.value : "femur";
+}
+function currentEpiBone(){
+  const r=[...epiBoneRadios].find(x=>x.checked);
+  return r ? r.value : "proximalTibia";
+}
+function refreshPlan(){
+  const m = planStrategyEl.value;
+  const isEpi = (m==="epi");
+  const isLen = (m==="lengthen");
+  const isComb = (m==="combined");
+
+  // Fyse-keuze alleen bij epi-only
+  $("physisWrap").classList.toggle("show", isEpi);
+  // Verleng-bot bij verlengen én combinatie
+  $("lengthenBoneWrap").classList.toggle("show", isLen || isComb);
+  // Hoeveelheid verlengen: alleen bij combinatie (bij lengthen-only wordt alles verlengd)
+  $("lengthenAmountWrap").classList.toggle("show", isComb);
+  // Rem-bot: alleen bij combinatie
+  $("epiBoneWrap").classList.toggle("show", isComb);
+  // Sessies bij verlengen én combinatie
+
+  // Residual-vraag: bij epi-only met één specifiek bot, én bij verlengen (één bot).
+  // Daar kun je kiezen: alleen het eigen segmentverschil corrigeren, of het hele
+  // beenlengteverschil in dit ene bot opvangen (overcorrectie → kniehoogteverschil).
+  // Bij combinatie vervalt de vraag (beide botten worden behandeld).
+  // Residu-vraag bij epi-only alleen als alle aangevinkte fyses in één bot zitten
+  // (dan kun je kiezen: alleen dat segment, of het hele been in dat bot opvangen).
+  const bones = inhibitBonesSet();
+  const singleBone = (bones.size===1);
+  $("planResidualWrap").classList.toggle("show", (isEpi && singleBone) || isLen);
+}
+// Herbereken het plan automatisch zodra een plan-instelling wijzigt, mits er al een
+// prognose is berekend (LAST_CTX).
+function refreshAndReplan(){
+  refreshPlan();
+  if(LAST_CTX && $("planOutput").innerHTML.trim()!=="") planRun();
+}
+function replanOnly(){ if(LAST_CTX && $("planOutput").innerHTML.trim()!=="") planRun(); }
+planStrategyEl.addEventListener("change", refreshAndReplan);
+[...physisCheckboxes].forEach(r=>r.addEventListener("change", refreshAndReplan));
+[...lengthenBoneRadios].forEach(r=>r.addEventListener("change", refreshAndReplan));
+[...epiBoneRadios].forEach(r=>r.addEventListener("change", refreshAndReplan));
+$("planResidualMode").addEventListener("change", refreshAndReplan);
+$("planAcceptVal").addEventListener("input", replanOnly);
+$("planAcceptRange").addEventListener("input", replanOnly);
+$("planLengthenVal").addEventListener("input", replanOnly);
+$("planLengthenRange").addEventListener("input", replanOnly);
+refreshPlan();
+linkSlider("planAcceptRange","planAcceptVal");
+linkSlider("planLengthenRange","planLengthenVal");
+
+/* ===================== HELPERS ===================== */
+function val(id){ const v=parseFloat($(id).value); return isNaN(v)?null:v; }
+function ageMonths(yId,mId){
+  const y=val(yId), m=val(mId);
+  if(y===null && m===null) return null;
+  return (y||0)*12 + (m||0);
+}
+function toMM(x, unit){ return unit==="cm" ? x*10 : x; }
+function fmtLen(mm, unit){ // toon in cm altijd voor leesbaarheid output, 1 decimaal
+  return (mm/10).toFixed(1)+" cm";
+}
+
+/* Bereken voor één segment alle uitkomsten.
+   shortNow/longNow in mm. Returns object of null als geen bruikbaar verschil. */
+function computeSegment(seg){
+  const {shortNow, longNow, shortSide, longSide,
+         curMonthsShort, curMonthsLong, sex, ctype, shaftIntact,
+         priorMode, shortPrev, longPrev, prevMonths,
+         inhibEstimate, damagedPhysis, restFunction, boneName,
+         physisConst} = seg;
+
+  const Mnow_long  = multiplierAt(curMonthsLong, sex);
+  const Mnow_short = multiplierAt(curMonthsShort, sex);
+
+  const Lm = longNow  * Mnow_long;            // lang been op maturiteit, zonder ingreep
+  let Sm, Iused=null;
+
+  if(shaftIntact){
+    // Midschachtfractuur met intacte fyse: het tekort zit in de al gevormde diafyse en
+    // groeit niet mee. Beide groeischijven zijn gezond en op dezelfde skeletleeftijd, dus
+    // produceren dezelfde ABSOLUTE restgroei. Het korte been krijgt er dus evenveel cm bij
+    // als het lange → het lengteverschil blijft constant (statisch), niet proportioneel.
+    const absoluteRemain = longNow * (Mnow_long - 1);   // restgroei gezonde fyse (in cm/mm)
+    Sm = shortNow + absoluteRemain;
+    Iused = 0;
+  } else if(ctype==="congenital"){
+    Sm = shortNow * Mnow_short;
+  } else {
+    // verworven
+    if(priorMode==="yes"){
+      // Alleen het segment waarin de opgegeven beschadigde fyse zit, krijgt groeiremming.
+      // Een ander segment groeit proportioneel mee (0% remming) — zo voorkom je dat meetruis
+      // in een niet-aangedaan bot een onterechte remming veroorzaakt.
+      const affectedBone = PHYSIS_BONE[damagedPhysis];   // "femur" | "tibia"
+      const thisIsAffected = (boneName===affectedBone) || (boneName==="totale been");
+      let I = 0;
+      let lowGrowthWarn = false;
+      if(thisIsAffected){
+        // HOOFDMETHODE: verhoudingsmethode, trend over alle intervallen, gewogen naar de groei
+        // van de gezonde zijde (grote/betrouwbare intervallen tellen zwaarder).
+        if(seg.history && seg.history.length>=2){
+          let sumW=0, sumWI=0, totalLongGrowth=0;
+          for(let i=0;i<seg.history.length-1;i++){
+            const a=seg.history[i], b=seg.history[i+1];
+            const dShort=b.short-a.short, dLong=b.long-a.long;
+            totalLongGrowth += Math.max(0,dLong);
+            if(dLong>0){
+              const Ii = 1 - (dShort/dLong);
+              const w = dLong;
+              sumW += w; sumWI += w*Math.max(0,Math.min(1,Ii));
+            }
+          }
+          I = sumW>0 ? sumWI/sumW : 0;
+          // Weinig groei over het hele interval → meting onbetrouwbaar (meetruis domineert).
+          if(totalLongGrowth < 20) lowGrowthWarn = true;   // < 2 cm groei gezonde zijde → onbetrouwbaar
+        } else {
+          const gShort=shortNow-shortPrev, gLong=longNow-longPrev;
+          I = gLong>0 ? 1-(gShort/gLong) : 0;
+          if(gLong < 20) lowGrowthWarn = true;
+        }
+      }
+      I = Math.max(0, Math.min(1, I));
+      Iused = I;
+      seg._Imethod = "ratio";
+      seg._lowGrowthWarn = lowGrowthWarn;
+      // FYSE-SPECIFIEKE REMMING: de remming treft alléén de gekozen (aangedane) groeischijf.
+      // De andere fyse(s) in hetzelfde bot groeien normaal door. Elke fyse levert een vast
+      // aandeel van de botgroei (distale femur 71% / proximale femur 29% / proximale tibia 57%
+      // / distale tibia 43%). Het korte bot groeit dus:
+      //   restgroei × [ gezonde-fyse-aandeel + (1 − I) × aangedaan-fyse-aandeel ].
+      const normalRemainShort = shortNow * (Mnow_short - 1);
+      let affectedShare = 1;   // standaard: hele bot (als fyse-aandeel onbekend)
+      if(thisIsAffected && boneName!=="totale been" && BONE_SHARE[boneName] && BONE_SHARE[boneName][damagedPhysis]!=null){
+        affectedShare = BONE_SHARE[boneName][damagedPhysis];
+      }
+      const healthyShare = 1 - affectedShare;
+      // effectieve groeifactor van het korte bot (fractie van normale restgroei die behouden blijft)
+      const growthFactor = thisIsAffected ? (healthyShare + (1 - Iused) * affectedShare) : 1;
+      Sm = shortNow + growthFactor * normalRemainShort;
+      seg._affectedShare = affectedShare;
+      // BIOLOGISCHE BEGRENZING: het korte been kan nooit minder groeien dan zijn gezonde fyses
+      // alleen al leveren (de aangedane fyse kan hooguit volledig stilstaan).
+      const minSm = shortNow + healthyShare * normalRemainShort;
+      if(Sm < minSm){ Sm = minSm; seg._diffCapped = true; }
+    } else {
+      // schatting met fyse-specifieke restgroei van het aangedane (korte) bot
+      if(boneName==="totale been" && seg.subFemurShort!=null && seg.subTibiaShort!=null){
+        // femur en tibia apart laten groeien met hun eigen factor, dan optellen
+        const sf=seg.subFemurShort, st=seg.subTibiaShort;
+        const facF=boneGrowthFactor("femur", damagedPhysis, restFunction);
+        const facT=boneGrowthFactor("tibia", damagedPhysis, restFunction);
+        const smF = sf + facF * (sf*(Mnow_short-1));
+        const smT = st + facT * (st*(Mnow_short-1));
+        Sm = smF + smT;
+      } else {
+        const factor = boneGrowthFactor(boneName, damagedPhysis, restFunction);
+        const normalRemainShort = shortNow * (Mnow_short - 1);
+        Sm = shortNow + factor * normalRemainShort;
+      }
+      Iused = (Sm < Lm) ? (1 - (Sm-shortNow)/Math.max(1e-9,(Lm-shortNow))) : 0;
+    }
+  }
+
+  const expectedDiffNoSurgery = Lm - Sm;
+
+  // ---- optimale epifysiodese-leeftijd: numerieke zoektocht ----
+  // Bij ingreep op leeftijd Te (maanden) in lang been:
+  //   lengte lang been op Te = longNow * (Mnow_long / multiplierAt(Te))
+  //   resterende groei lang been na Te tot maturiteit = lengte(Te)*(M(Te)-1)
+  //   weggenomen door fyse = physisConst * dieRestgroei
+  //   eindlengte lang been = Lm - weggenomen
+  //   eindverschil = eindlengte_lang - Sm
+  let best=null;
+  for(let Te=curMonthsLong; Te<=MATURITY_MONTHS; Te++){
+    const M_Te = multiplierAt(Te, sex);
+    const lenAtTe = longNow * (Mnow_long / M_Te);
+    const remainAfter = lenAtTe * (M_Te - 1);
+    const removed = physisConst * remainAfter;
+    const finalLong = Lm - removed;
+    const finalDiff = finalLong - Sm;
+    if(best===null || Math.abs(finalDiff) < Math.abs(best.finalDiff)){
+      best = { Te, finalDiff, finalLong, removed };
+    }
+  }
+
+  return {
+    shortSide, longSide, shortNow, longNow,
+    Mnow_long, Mnow_short, Lm, Sm,
+    expectedDiffNoSurgery, I:Iused,
+    optimalTe: best.Te, optimalDiff: best.finalDiff,
+    optimalFinalLong: best.finalLong,
+    removed: best.removed,
+    Imethod: seg._Imethod || null,
+    lowGrowthWarn: seg._lowGrowthWarn || false,
+    lowGrowthRange: seg._lowGrowthRange || null,
+    diffCapped: seg._diffCapped || false,
+    _seg: seg
+  };
+}
+
+/* Eindverschil als je op leeftijd Te (maanden) een epifysiodese doet in het lange been,
+   gegeven een segment-resultaat r. Positief = lang been nog langer. */
+function diffIfOperateAt(r, Te, sex, physisConst){
+  const M_Te = multiplierAt(Te, sex);
+  const lenAtTe = r.longNow * (r.Mnow_long / M_Te);
+  const remainAfter = lenAtTe * (M_Te - 1);
+  const removed = physisConst * remainAfter;
+  const finalLong = r.Lm - removed;
+  return { finalDiff: finalLong - r.Sm, finalLong, removed };
+}
+
+/* Zoek de leeftijd waarop het eindverschil het dichtst bij een doelwaarde (mm) ligt.
+   targetDiffMM: gewenst resterend verschil (lang − kort), meestal 0. */
+function ageForTargetDiff(r, sex, physisConst, targetDiffMM, curMonths){
+  let best=null;
+  for(let Te=curMonths; Te<=MATURITY_MONTHS; Te++){
+    const d = diffIfOperateAt(r, Te, sex, physisConst);
+    const err = Math.abs(d.finalDiff - targetDiffMM);
+    if(best===null || err < best.err){
+      best = { Te, err, finalDiff:d.finalDiff, finalLong:d.finalLong, removed:d.removed };
+    }
+  }
+  return best;
+}
+
+/* ===== MULTI-FYSE EPIFYSIODESE — één gezamenlijk moment, hele been =====
+   De gebruiker vinkt één of meer fyses aan (distale/proximale femur, proximale/distale tibia).
+   Alle aangevinkte fyses worden OP HETZELFDE MOMENT (skeletleeftijd Te) geremd. Op elk
+   kandidaat-moment berekenen we hoeveel groei elke aangevinkte fyse van de LANGE zijde wegneemt
+   en tellen dat op. Het eindverschil wordt op het HELE been (femur + tibia samen) beoordeeld.
+
+   Per fyse p in bot B:
+     restgroei lange zijde van B na Te = lenAtTe_B × (M_Te − 1),  lenAtTe_B = longNow_B × Mnow_long_B / M_Te
+     weggenomen door p = BONE_SHARE[B][p] × restgroei_B
+   Meerdere fyses in hetzelfde bot: hun aandelen tellen op (max 1 = volledige arrest van dat bot).
+
+   segs: { femur: rFemur|null, tibia: rTibia|null }
+   phys: lijst sleutels, bv ["distalFemur","proximalTibia","distalTibia"]
+   targetDiffMM: gewenst resterend TOTAAL verschil (lang − kort), meestal ~0 (signed via sign).
+   Geeft terug: het gezamenlijke moment + per-fyse en per-bot weggenomen cm + eindverschil. */
+function multiPhysisRemovedAt(segs, sex, phys, Te){
+  const M_Te = multiplierAt(Te, sex);
+  // residu lange zijde per bot op Te
+  const resid = {};
+  ["femur","tibia"].forEach(B=>{
+    const r = segs[B];
+    if(!r){ resid[B]=0; return; }
+    const lenAtTe = r.longNow * (r.Mnow_long / M_Te);
+    resid[B] = lenAtTe * (M_Te - 1);           // mm restgroei lange zijde
+  });
+  // aandeel per bot optellen (gecapt op 1), daaruit per-fyse en per-bot weggenomen mm
+  const shareByBone = { femur:0, tibia:0 };
+  const perPhysis = {};
+  phys.forEach(p=>{
+    const B = PHYSIS_BONE[p];
+    const s = (BONE_SHARE[B] && BONE_SHARE[B][p]!=null) ? BONE_SHARE[B][p] : 0;
+    shareByBone[B] += s;
+    perPhysis[p] = { bone:B, share:s };
+  });
+  let removedTot = 0;
+  const removedByBone = { femur:0, tibia:0 };
+  ["femur","tibia"].forEach(B=>{
+    const capShare = Math.min(1, shareByBone[B]);
+    removedByBone[B] = capShare * resid[B];
+    removedTot += removedByBone[B];
+  });
+  // per-fyse weggenomen mm (proportioneel binnen het bot, na capping)
+  ["femur","tibia"].forEach(B=>{
+    const raw = shareByBone[B];
+    const scale = raw>0 ? Math.min(1,raw)/raw : 0;   // schaal terug als aandelen > 1 optellen
+    phys.filter(p=>PHYSIS_BONE[p]===B).forEach(p=>{
+      perPhysis[p].removedMM = perPhysis[p].share * scale * resid[B];
+    });
+  });
+  return { M_Te, resid, removedTot, removedByBone, shareByBone, perPhysis };
+}
+
+function planMultiPhysisEpi(segs, sex, phys, targetTotalMM, curMonths){
+  const rF = segs.femur, rT = segs.tibia;
+  const LmTot = (rF?rF.Lm:0) + (rT?rT.Lm:0);
+  const SmTot = (rF?rF.Sm:0) + (rT?rT.Sm:0);
+  const diffNoSurgery = LmTot - SmTot;             // signed (lang − kort)
+  const sign = diffNoSurgery>=0 ? 1 : -1;
+  const minM = EPI_MIN_SKELETAL_MONTHS[sex];
+  const startM = Math.max(curMonths, 1);
+  const goalSigned = sign * Math.abs(targetTotalMM);
+
+  function outcomeAt(Te){
+    const info = multiPhysisRemovedAt(segs, sex, phys, Te);
+    const finalLongTot = LmTot - info.removedTot;
+    const finalDiff = finalLongTot - SmTot;        // signed
+    return { Te, finalDiff, finalLongTot, ...info };
+  }
+
+  // THEORETISCH optimum (ongeacht minimumleeftijd) — voor de haalbaarheidsmelding
+  let bestFree=null;
+  for(let Te=startM; Te<=MATURITY_MONTHS; Te++){
+    const o=outcomeAt(Te);
+    const err=Math.abs(o.finalDiff - goalSigned);
+    if(bestFree===null || err<bestFree.err){ bestFree={...o, err}; }
+  }
+  // KLINISCH BRUIKBAAR optimum (≥ minimumleeftijd)
+  let bestRec=null;
+  for(let Te=Math.max(startM,minM); Te<=MATURITY_MONTHS; Te++){
+    const o=outcomeAt(Te);
+    const err=Math.abs(o.finalDiff - goalSigned);
+    if(bestRec===null || err<bestRec.err){ bestRec={...o, err}; }
+  }
+  // maximaal haalbare remming (op het vroegst bruikbare moment neemt de ED het meeste weg)
+  const atMin = outcomeAt(Math.max(startM,minM));
+  return {
+    phys, diffNoSurgery, sign, LmTot, SmTot, targetTotalMM:Math.abs(targetTotalMM),
+    optimum: bestFree,          // theoretisch beste moment (kan te jong zijn)
+    chosen: bestRec || bestFree, // bruikbaar moment (≥ min leeftijd)
+    atMin,                      // uitkomst op de vroegst bruikbare leeftijd
+    tooEarly: bestFree && bestFree.Te < minM,
+    minM
+  };
+}
+
+/* Behandelplanner. Gegeven het uitgelichte segment-resultaat (r), de fyse-constante,
+   de gewenste strategie en het geaccepteerde restverschil, geef een concreet plan terug.
+   strategy: "epi" | "lengthen" | "combined"; boneName: waar de ingreep hoort. */
+function buildTreatmentPlan(r, sex, physisConst, boneName, strategy, targetMM, curMonths, maxSessions, residualMode, otherResidualMM){
+  const diff = Math.abs(r.expectedDiffNoSurgery);
+  otherResidualMM = otherResidualMM || 0;
+  residualMode = residualMode || "leave";
+
+  // Het geaccepteerde eindverschil (targetMM) betekenis hangt af van de modus:
+  //  - "leave": je laat het andere segment met rust → het geaccepteerde verschil geldt voor
+  //             het BEHANDELDE segment zelf. segTarget = targetMM. (Het andere segment houdt
+  //             zijn eigen restverschil; dat telt los mee in het totaal.)
+  //  - "compensate": je wilt het TOTALE been binnen targetMM → het behandelde segment vangt
+  //             het andere segment op. segTarget = targetMM − otherResidual (kan negatief →
+  //             overcorrectie).
+  let segTargetMM, overcorrection=false, overcorrectionMM=0;
+  if(residualMode==="compensate"){
+    segTargetMM = targetMM - otherResidualMM;
+    if(segTargetMM < 0){ overcorrection=true; overcorrectionMM = -segTargetMM; }
+  } else {
+    // leave: geaccepteerd verschil geldt voor het behandelde segment zelf.
+    segTargetMM = targetMM;
+  }
+  // correctie die het behandelde segment moet leveren:
+  // bij overcorrectie moet het méér dan het volledige verschil doen (diff + overcorrectie).
+  const correction = overcorrection ? (diff + overcorrectionMM) : Math.max(0, diff - segTargetMM);
+  const sign = (r.expectedDiffNoSurgery>=0?1:-1);
+  const plan = { strategy, diff, targetMM, segTargetMM, correction, boneName, parts:[], epi:null,
+                 warnings:[], maxSessions:maxSessions||2, residualMode, otherResidualMM,
+                 overcorrection, overcorrectionMM };
+
+  if(overcorrection){
+    const kniehoogte = ` Het kniegewricht komt aan de behandelde zijde daardoor op een andere hoogte dan aan de andere zijde (± ${(otherResidualMM/10).toFixed(1)} cm verschil in kniehoogte). De totale beenlengte klopt, maar in zit en bij gebogen knie is dit verschil zichtbaar. Bespreek dit vooraf met patiënt en ouders.`;
+    plan.warnings.unshift(`⚠ Overcorrectie in het ${boneName}: om het totale been tot ${(targetMM/10).toFixed(1)} cm te brengen moet het ${boneName} ${(overcorrectionMM/10).toFixed(1)} cm vóórbij gelijk gecorrigeerd worden (het korte ${boneName} wordt langer dan het lange) om het verschil van ${(otherResidualMM/10).toFixed(1)} cm in het andere segment te compenseren.${kniehoogte}`);
+  }
+
+  if(correction<=0 && !overcorrection){
+    plan.note = "Het verwachte verschil ligt al binnen het geaccepteerde restverschil; geen ingreep nodig.";
+    return plan;
+  }
+
+  if(strategy==="epi"){
+    // doel-eindverschil voor het segment (signed): bij overcorrectie negatief
+    const segGoalSigned = sign * segTargetMM;
+    const b = ageForTargetDiff(r, sex, physisConst, segGoalSigned, curMonths);
+    const recTe = Math.max(b.Te, EPI_MIN_SKELETAL_MONTHS[sex]);
+    plan.epi = { Te:b.Te, recTe,
+                 finalDiff:b.finalDiff, removed:b.removed, tooEarly:b.Te<EPI_MIN_SKELETAL_MONTHS[sex] };
+    // BELANGRIJK: het theoretische optimum kan onrealistisch jong liggen (bijv. 3 jr bij PFFD).
+    // Wat er klinisch haalbaar is, hangt af van wat de ED op de VROEGST BRUIKBARE leeftijd
+    // (recTe, ≥ minimumleeftijd) nog kan wegnemen. Beoordeel de haalbaarheid daarop.
+    const atRec = diffIfOperateAt(r, recTe, sex, physisConst);
+    const removableAtRec = atRec.removed;
+    const residualAtRec = Math.abs(atRec.finalDiff);
+    if(!overcorrection && b.Te < EPI_MIN_SKELETAL_MONTHS[sex] && residualAtRec > 20){
+      // optimum ligt vóór de minimumleeftijd → op de vroegst bruikbare leeftijd blijft er te
+      // veel over. Dit is precies het PFFD-scenario.
+      plan.warnings.unshift(`⛔ Onmogelijk met epifysiodese alleen op een bruikbare leeftijd. Het optimale rekenkundige moment ligt vóór de minimale operatieleeftijd (${monthsToLabel(EPI_MIN_SKELETAL_MONTHS[sex])}). Op de vroegst bruikbare leeftijd (${ageLabelSkeletal(recTe,{skel:null,cal:null})}) kan de epifysiodese nog maar ± ${(removableAtRec/10).toFixed(1)} cm wegnemen, terwijl ${(correction/10).toFixed(1)} cm nodig is — er blijft dan ± ${(residualAtRec/10).toFixed(1)} cm over. Dit verschil vraagt om beenverlenging (PRECICE), eventueel gecombineerd, in een gespecialiseerd centrum.`);
+    } else if(!overcorrection && b.removed < correction - 2){
+      const shortfall = correction - b.removed;
+      if(shortfall > 30 || correction > 100){
+        plan.warnings.unshift(`⛔ Onmogelijk met epifysiodese alleen. Het verschil van ${(correction/10).toFixed(1)} cm is te groot: een epifysiodese kan maximaal ± ${(b.removed/10).toFixed(1)} cm wegnemen. Er blijft dan ± ${(shortfall/10).toFixed(1)} cm over. Dit verschil vraagt om beenverlenging (PRECICE), eventueel in combinatie met een epifysiodese, in een gespecialiseerd centrum.`);
+      } else {
+        plan.warnings.push(`Epifysiodese kan maximaal ${(b.removed/10).toFixed(1)} cm wegnemen; dat is minder dan de benodigde ${(correction/10).toFixed(1)} cm. Overweeg (deels) beenverlenging.`);
+      }
+    }
+    if(correction > 50 && correction <= 100)
+      plan.warnings.push("Een verschil > 5 cm corrigeer je doorgaans niet met epifysiodese alleen (klassieke grens). Beenverlenging of een combinatie is passender.");
+  }
+  else if(strategy==="lengthen"){
+    let remaining = correction, session=0;
+    while(remaining>0 && session<4){
+      const mm = Math.min(remaining, PLAN.preciceSessionMM);
+      plan.parts.push({type:"lengthen", bone:boneName, mm, session:session+1, durationDays: lengtheningDurationDays(mm)});
+      remaining -= mm; session++;
+    }
+    if(remaining>0) plan.warnings.push(`Na ${session} sessies resteert nog ${(remaining/10).toFixed(1)} cm; meer sessies of een combinatie met epifysiodese nodig.`);
+  }
+  else if(strategy==="combined"){
+    // De gebruiker geeft het MAXIMALE aantal verlengingssessies op (maxSessions).
+    // Verlenging neemt zoveel mogelijk (sessies × 8 cm); de ED remt de rest GERICHT.
+    // Als de gericht berekende ED-leeftijd te jong uitvalt, voegen we automatisch een
+    // verlengingssessie toe (binnen het max) zodat de ED minder hoeft en de leeftijd
+    // richting de puberteit schuift.
+    const maxSessions = Math.max(1, Math.min(3, plan.maxSessions||2));
+    const minM = EPI_MIN_SKELETAL_MONTHS[sex];
+
+    function planWithSessions(nSessions){
+      const lengthenPart = Math.min(nSessions*PLAN.preciceSessionMM, correction);
+      const epiPart = correction - lengthenPart; // rest die de ED moet remmen
+      // Na verlenging is het korte been echt Sm + lengthenPart. De ED remt het lange been.
+      // Doel: lang been (na arrest) − verlengd kort been = segTargetMM (signed).
+      // Dat los je op met ageForTargetDiff op een segment waarvan de korte zijde het
+      // verlengde been is, met doelverschil = segTargetMM.
+      const shortAfterLengthen = r.Sm + lengthenPart;
+      const rAfter = {...r, Sm: shortAfterLengthen};
+      const b = ageForTargetDiff(rAfter, sex, physisConst, segTargetMM, curMonths);
+      return { nSessions, lengthenPart, epiPart, Te:b.Te, removed:b.removed, finalDiff:b.finalDiff };
+    }
+
+    // begin met zo min mogelijk sessies, voeg toe als ED te jong of niet haalbaar
+    let chosen=null;
+    for(let n=1; n<=maxSessions; n++){
+      const cand = planWithSessions(n);
+      chosen = cand;
+      // ED hoeft niets meer te remmen → klaar
+      if(cand.epiPart<=0){ break; }
+      // ED-leeftijd valt binnen aanbevolen venster → goed
+      if(cand.Te>=minM){ break; }
+      // anders: te jong, probeer volgende n (meer verlengen, minder remmen)
+    }
+
+    // bouw verlengingssessies van 8 cm
+    let remaining = chosen.lengthenPart, session=0;
+    while(remaining>0 && session<chosen.nSessions){
+      const mm=Math.min(remaining, PLAN.preciceSessionMM);
+      plan.parts.push({type:"lengthen", bone:boneName, mm, session:session+1, durationDays: lengtheningDurationDays(mm)});
+      remaining-=mm; session++;
+    }
+    plan.lengthenTotalMM = chosen.lengthenPart;
+    if(chosen.epiPart>0){
+      plan.epi = { Te:chosen.Te, recTe:Math.max(chosen.Te,minM), removed:chosen.removed,
+                   epiTargetMM:chosen.epiPart, targeted:true,
+                   tooEarly: chosen.Te<minM };
+    }
+    if(chosen.epiPart>0 && chosen.Te<minM)
+      plan.warnings.push(`Zelfs met ${chosen.nSessions} verlengingssessie(s) valt het gerichte ED-moment (${monthsToLabelG(chosen.Te)}) vóór het aanbevolen venster. Verhoog het max. aantal sessies of accepteer een groter restverschil.`);
+    if(chosen.lengthenPart < correction - chosen.epiPart - 2)
+      plan.warnings.push("De verlenging haalt het benodigde aantal cm niet binnen het gekozen maximum aantal sessies.");
+  }
+  return plan;
+}
+// kleine helper voor labels binnen plan (maanden → tekst)
+function monthsToLabelG(m){ return monthsToLabel(m); }
+
+/* ===================== MAIN ===================== */
+function run(){
+  const errs=[];
+  const sex = $("sex").value;
+  const unit = $("unit").value;
+  const ctype = [...ctypeRadios].find(r=>r.checked).value;
+
+  const cal = ageMonths("calY","calM");
+  const skel = ageMonths("skelY","skelM");
+  const useMonths = skel!==null ? skel : cal;
+  if(cal===null) errs.push("Vul de kalenderleeftijd in.");
+  if(useMonths!==null && (useMonths<0 || useMonths>MATURITY_MONTHS))
+    errs.push("Leeftijd valt buiten het bereik van de tabel (0–17 jaar).");
+
+  const femR=val("femR"), femL=val("femL"), tibR=val("tibR"), tibL=val("tibL");
+  // prognose vereist het hele been: femur én tibia
+  if(femR===null||femL===null) errs.push("Vul beide femurlengtes in.");
+  if(tibR===null||tibL===null) errs.push("Vul beide tibialengtes in.");
+
+  // verworven invoer
+  let priorMode=null, prevMonths=null, prevAgeType=null, damagedPhysis=null, restMode=null, damagedSide=null;
+  let priorMeasures=[];
+  let acqSubtype = "physis";
+  if(ctype==="acquired") acqSubtype = currentAcqSubtype();
+  // midschachtfractuur met intacte fyse: 0% remming → proportionele groei (= congenitaal model).
+  const shaftIntact = (ctype==="acquired" && acqSubtype==="shaft");
+  if(ctype==="acquired" && acqSubtype==="physis"){
+    priorMode=[...priorRadios].find(r=>r.checked).value;
+    if(priorMode==="yes"){
+      damagedPhysis = $("damagedPhysisPrior").value;
+      damagedSide = $("damagedSidePrior").value;   // auto | left | right
+      priorMeasures = collectPriorMeasures(unit);   // gesorteerd oud→nieuw, lengtes al in mm
+      // validatie
+      const valid = priorMeasures.filter(m=>m.months!=null);
+      if(valid.length===0) errs.push("Vul minstens één eerdere meting in (met leeftijd).");
+      valid.forEach(m=>{
+        if(useMonths!=null && m.months>=useMonths)
+          errs.push("Elke eerdere meting moet op een jongere leeftijd liggen dan nu.");
+      });
+      // oudste leeftijd voor de bestaande weergave-logica (prevMonths)
+      if(valid.length>0) prevMonths = valid[0].months;
+      prevAgeType = valid.length>0 ? valid[0].type : "calendar";
+    } else {
+      damagedPhysis = $("damagedPhysis").value;
+      damagedSide = $("damagedSide").value;   // auto | left | right
+      restMode = $("restMode").value;          // dead | uncertain
+    }
+  }
+
+  // segment-helper bouwen.
+  // De "korte/aangedane" zijde is normaal de kortere meting; bij een opgegeven
+  // beschadigde zijde (links/rechts) is dat de aangedane zijde, ongeacht de huidige lengte.
+  // haal voor een segment ('femur'|'tibia'|'totale been') de R/L-lengte uit een meting
+  function segLenFromMeasure(m, segName){
+    if(segName==="femur") return { r:m.femR, l:m.femL };
+    if(segName==="tibia") return { r:m.tibR, l:m.tibL };
+    // totale been
+    const r = (m.femR!=null && m.tibR!=null) ? m.femR+m.tibR : null;
+    const l = (m.femL!=null && m.tibL!=null) ? m.femL+m.tibL : null;
+    return { r, l };
+  }
+  function buildSeg(name, rNow, lNow, rPrev, lPrev, physisConst){
+    if(rNow===null || lNow===null) return null;
+    let affectedIsRight;
+    if(ctype==="acquired" && damagedSide!=="auto"){
+      affectedIsRight = (damagedSide==="right");
+    } else {
+      affectedIsRight = rNow <= lNow;
+    }
+    const shortNow = toMM(affectedIsRight?rNow:lNow, unit);
+    const longNow  = toMM(affectedIsRight?lNow:rNow, unit);
+
+    // bouw de volledige meetreeks voor dit segment (oude metingen + huidige), als
+    // {months, short, long}. De huidige meting is het laatste punt.
+    let history=null, shortPrev=null, longPrev=null;
+    if(ctype==="acquired" && priorMode==="yes"){
+      const pts=[];
+      priorMeasures.forEach(m=>{
+        if(m.months==null) return;
+        const {r,l} = segLenFromMeasure(m, name);
+        if(r==null || l==null) return;
+        pts.push({ months:m.months,
+                   short: affectedIsRight?r:l,
+                   long:  affectedIsRight?l:r });
+      });
+      if(pts.length===0){ errs.push(`Eerdere ${name}-metingen ontbreken.`); return null; }
+      pts.push({ months:useMonths, short:shortNow, long:longNow });
+      history = pts;
+      shortPrev = pts[0].short;   // oudste, voor de weergave
+      longPrev  = pts[0].long;
+    }
+    const restFunction = (restMode==="dead") ? 0 : 0; // bij 'uncertain' toont de range beide uitersten
+    return {
+      name,
+      shortNow, longNow,
+      shortSide: affectedIsRight?"rechts":"links",
+      longSide:  affectedIsRight?"links":"rechts",
+      affectedIsRight,
+      curMonthsShort: useMonths, curMonthsLong: useMonths,
+      sex, ctype, shaftIntact,
+      priorMode,
+      shortPrev, longPrev, prevMonths, history,
+      damagedPhysis, restFunction, restMode, boneName: name,
+      physisConst
+    };
+  }
+
+  // Altijd alle drie segmenten bouwen (prognose vereist het hele been).
+  // (prev-lengtes komen nu uit priorMeasures; de rPrev/lPrev-parameters zijn vestigiaal.)
+  const segFemur = (femR!==null&&femL!==null) ? buildSeg("femur",femR,femL,null,null,PHYSIS.distalFemur) : null;
+  const segTibia = (tibR!==null&&tibL!==null) ? buildSeg("tibia",tibR,tibL,null,null,PHYSIS.proximalTibia) : null;
+  let segTotal=null;
+  if(femR!==null&&femL!==null&&tibR!==null&&tibL!==null){
+    const rNow=femR+tibR, lNow=femL+tibL;
+    const ts = buildSeg("totale been",rNow,lNow,null,null,PHYSIS.bothKnee);
+    if(ts){
+      const aff = ts.affectedIsRight;
+      ts.subFemurShort = toMM(aff?femR:femL, unit);
+      ts.subTibiaShort = toMM(aff?tibR:tibL, unit);
+    }
+    segTotal = ts;
+  }
+
+  // errors tonen
+  const errBox=$("errors");
+  if(errs.length){
+    errBox.innerHTML = "<strong>Controleer de invoer:</strong><ul>"+errs.map(e=>`<li>${e}</li>`).join("")+"</ul>";
+    errBox.classList.add("show");
+    $("output").classList.remove("show");
+    errBox.scrollIntoView({behavior:"smooth",block:"nearest"});
+    return;
+  }
+  errBox.classList.remove("show");
+
+  // bereken alle drie segmenten
+  const rFemur = segFemur ? computeSegment(segFemur) : null;
+  const rTibia = segTibia ? computeSegment(segTibia) : null;
+  let rTotal = segTotal ? computeSegment(segTotal) : null;
+  // Bij de verworven route met metingen is de remming FYSE-SPECIFIEK (alleen de gekozen fyse).
+  // Het totale been moet dan uit de al correct berekende femur- en tibia-eindlengtes worden
+  // samengesteld, i.p.v. als één geheel geremd (dat zou het verkeerde bot ook remmen).
+  if(rTotal && rFemur && rTibia && ctype==="acquired" && priorMode==="yes"){
+    // korte/lange zijde van het totale been volgen de som van de segmenten aan dezelfde zijde.
+    // rFemur/rTibia gebruiken 'short'=aangedane zijde; het totale been neemt dezelfde zijde.
+    const SmTot = rFemur.Sm + rTibia.Sm;
+    const LmTot = rFemur.Lm + rTibia.Lm;
+    rTotal = {...rTotal, Sm:SmTot, Lm:LmTot, expectedDiffNoSurgery: LmTot - SmTot,
+              _recomputed:true};
+  }
+
+  // bandbreedte (alleen verworven + schatting, onzeker-modus)
+  function rangeForEstimate(segObj){
+    if(!segObj) return null;
+    if(!(ctype==="acquired" && priorMode==="no")) return null;
+    if(segObj.restMode!=="uncertain") return null;
+    const sDead   = {...segObj, restFunction: 0};
+    const sNormal = {...segObj, restFunction: 1};
+    const rDead = computeSegment(sDead), rNormal = computeSegment(sNormal);
+    return { lo:0, hi:1, teDead:rDead.optimalTe, teNormal:rNormal.optimalTe,
+             diffDead:rDead.expectedDiffNoSurgery, diffNormal:rNormal.expectedDiffNoSurgery };
+  }
+
+  // label voor beschadigde fyse (verworven + schatting)
+  let damagedLabel=null, restLabel=null;
+  if(ctype==="acquired"){
+    const physisNL = {distalFemur:"distale femur", proximalFemur:"proximale femur",
+                      proximalTibia:"proximale tibia", distalTibia:"distale tibia"}[damagedPhysis];
+    if(priorMode==="no"){
+      damagedLabel = physisNL;
+      restLabel = (restMode==="dead") ? "geen restgroei (fyse gesloten)" : "onzeker";
+    } else if(priorMode==="yes"){
+      damagedLabel = physisNL;
+      restLabel = "gemeten uit twee metingen";
+    }
+  }
+
+  // bewaar context voor stap 2 (planRun gebruikt deze). De epifysiodese-voorkeur
+  // (#physis) wordt pas in stap 2 gekozen, dus highlight wordt in planRun herberekend.
+  const SECONDARY_THRESHOLD_MM2 = 20;
+  function computeHighlight(pref){
+    if(pref!=="auto"){
+      if(pref==="distalFemur") return ["Femur", rFemur, segFemur, "distale femur"];
+      if(pref==="proximalTibia") return ["Tibia", rTibia, segTibia, "proximale tibia"];
+      return ["Totale been", rTotal, segTotal, "beide knie-fyses (totale been)"];
+    }
+    const segOpts=[["Femur",rFemur,segFemur,"distale femur"],
+                   ["Tibia",rTibia,segTibia,"proximale tibia"]].filter(o=>o[1]);
+    segOpts.sort((a,b)=>Math.abs(b[1].expectedDiffNoSurgery)-Math.abs(a[1].expectedDiffNoSurgery));
+    return segOpts[0];
+  }
+  function computeSecondary(pref, hl){
+    if(pref!=="auto") return null;
+    const all=[["Femur",rFemur,segFemur,"distale femur"],
+               ["Tibia",rTibia,segTibia,"proximale tibia"]].filter(o=>o[1]);
+    const other=all.find(o=>o[0]!==hl[0]);
+    if(other && Math.abs(other[1].expectedDiffNoSurgery) > SECONDARY_THRESHOLD_MM2) return other;
+    return null;
+  }
+
+  // bandbreedte voor de prognose bij 'onzeker' (verworven + schatting).
+  // Toont het totale-been-eindverschil tussen fyse-dood (0%) en normale doorgroei (100%).
+  let uncertaintyRange = null;
+  if(ctype==="acquired" && priorMode==="no" && restMode==="uncertain" && rTotal){
+    const rt = rangeForEstimate(segTotal);
+    if(rt){
+      // femur/tibia apart, voor de per-segment weergave
+      const rf = rangeForEstimate(segFemur);
+      const rtb = rangeForEstimate(segTibia);
+      uncertaintyRange = {
+        total: rt,
+        femur: rf,
+        tibia: rtb
+      };
+    }
+  }
+
+  LAST_CTX = {sex,unit,ctype,useMonths,skel,cal, shaftIntact,
+              rFemur, rTibia, rTotal,
+              rangeForEstimate, uncertaintyRange, priorMode, damagedLabel, restLabel, restMode,
+              computeHighlight, computeSecondary};
+
+  renderOutput(LAST_CTX);
+
+  // toon stap 2 (plannen). Niet naar beneden scrollen — de gebruiker wil eerst
+  // de prognose zien. renderOutput scrollt al naar de bovenkant van de uitkomst.
+  $("planStep").style.display = "block";
+  $("planOutput").innerHTML = "";
+}
+
+// module-niveau context van de laatste prognose-berekening
+let LAST_CTX = null;
+
+/* ===================== STAP 2: BEHANDELPLAN ===================== */
+function planRun(scrollToPlan){
+  if(!LAST_CTX){ return; }
+  const {sex,useMonths,computeHighlight,computeSecondary} = LAST_CTX;
+
+  const planStrategy = planStrategyEl.value;
+  const acceptMM = (val("planAcceptVal")||0)*10;
+  const maxSessions = 6; // ruime bovengrens; de tool bepaalt zelf hoeveel sessies nodig zijn
+  const {rFemur, rTibia, rTotal} = LAST_CTX;
+
+  // ===== COMBINATIE: eigen keuze verleng-bot + hoeveelheid, rem-bot vangt de rest op =====
+  if(planStrategy==="combined"){
+    const lenBone = currentLengthenBone();            // "femur" | "tibia"
+    const epiChoice = currentEpiBone();               // "distalFemur" | "proximalTibia" | "bothKnee"
+    const lengthenMM = (val("planLengthenVal")||0)*10;
+
+    const totalDiff = Math.abs(rTotal.expectedDiffNoSurgery);
+    const correction = Math.max(0, totalDiff - acceptMM);
+    const epiNeedMM = Math.max(0, correction - lengthenMM);   // wat de remming moet doen
+    const overshoot = Math.max(0, lengthenMM - correction);   // meer verlengd dan nodig
+
+    // rem-segment bepalen
+    let epiSeg, epiConst, epiLabel;
+    if(epiChoice==="distalFemur"){ epiSeg=rFemur; epiConst=PHYSIS.distalFemur; epiLabel="distale femur"; }
+    else if(epiChoice==="proximalTibia"){ epiSeg=rTibia; epiConst=PHYSIS.proximalTibia; epiLabel="proximale tibia"; }
+    else { epiSeg=rTotal; epiConst=PHYSIS.bothKnee; epiLabel="beide knie-fyses"; }
+
+    // Gericht remmoment: het rem-segment moet epiNeedMM aan groei wegnemen van de lange zijde.
+    // We modelleren dat op het rem-segment: zoek de leeftijd waarop de ED precies epiNeedMM remt.
+    // Dat doen we door een virtueel segment te maken waarvan het doelverschil zo ligt dat de
+    // benodigde remming gelijk is aan epiNeedMM.
+    let epiInfo=null, epiWarn=null;
+    if(epiNeedMM>0 && epiSeg){
+      const signE = epiSeg.expectedDiffNoSurgery>=0?1:-1;
+      // doelverschil in het rem-segment = huidig verwacht segmentverschil − epiNeedMM
+      const segDiff = Math.abs(epiSeg.expectedDiffNoSurgery);
+      const segTarget = segDiff - epiNeedMM;   // kan negatief → overcorrectie in dat bot
+      const b = ageForTargetDiff(epiSeg, sex, epiConst, signE*segTarget, useMonths);
+      epiInfo = { Te:b.Te, recTe:Math.max(b.Te, EPI_MIN_SKELETAL_MONTHS[sex]),
+                  removed:b.removed, needMM:epiNeedMM,
+                  tooEarly: b.Te < EPI_MIN_SKELETAL_MONTHS[sex],
+                  segTarget, overcorrects: segTarget < -1 };
+      if(b.removed < epiNeedMM - 3)
+        epiWarn = `De ${epiLabel} kan bij het gerichte moment maximaal ± ${(b.removed/10).toFixed(1)} cm wegnemen; er is ± ${(epiNeedMM/10).toFixed(1)} cm nodig. Verleng meer, accepteer een groter restverschil, of kies een andere fyse.`;
+      else if(epiInfo.overcorrects)
+        epiWarn = `⚠ Overcorrectie: om ± ${(epiNeedMM/10).toFixed(1)} cm te remmen moet de ${epiLabel} verder dan gelijk gecorrigeerd worden (het korte bot wordt in dat segment langer dan het lange). Het totale been komt wel uit, maar je creëert bewust een segment-ongelijkheid.`;
+    }
+
+    // verlengingssessies opbouwen (femur ± 8 cm, tibia ± 5 cm per sessie)
+    const perSession = (lenBone==="femur") ? PLAN.preciceSessionMM : 50;
+    const parts=[]; let remaining=lengthenMM, s=0;
+    while(remaining>0.5 && s<maxSessions){
+      const mm=Math.min(remaining, perSession);
+      parts.push({type:"lengthen", bone:lenBone, mm, session:s+1, durationDays:lengtheningDurationDays(mm)});
+      remaining-=mm; s++;
+    }
+    const warnings=[];
+    if(remaining>0.5)
+      warnings.push(`De gewenste verlenging van ${(lengthenMM/10).toFixed(1)} cm past niet binnen een realistisch aantal sessies (${lenBone==="femur"?"± 8":"± 5"} cm per sessie). Verlaag de verlenging of kies een andere strategie.`);
+    if(overshoot>0)
+      warnings.push(`Je verlengt ${(overshoot/10).toFixed(1)} cm méér dan nodig (${(correction/10).toFixed(1)} cm te corrigeren). Er is dan geen remming meer nodig; overweeg minder te verlengen.`);
+    if(epiWarn) warnings.push(epiWarn);
+    if(lenBone==="tibia" && lengthenMM>50)
+      warnings.push("Tibiaverlenging > 5 cm heeft een duidelijk verhoogd complicatierisico; femurverlenging is doorgaans gunstiger.");
+
+    const treatmentPlan = {
+      strategy:"combined", combinedSplit:true,
+      diff: totalDiff, targetMM: acceptMM, correction,
+      lengthenBone: lenBone, lengthenMM, lengthenTotalMM: lengthenMM - Math.max(0,remaining),
+      epiChoice, epiLabel, epiSeg, epi: epiInfo, epiNeedMM,
+      parts, warnings, maxSessions
+    };
+    renderPlan({...LAST_CTX, treatmentPlan});
+    if(scrollToPlan) $("planOutput").scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+
+  // ===== EPI-ONLY: multi-fyse, één gezamenlijk moment op het hele been =====
+  if(planStrategy==="epi"){
+    const phys = currentInhibitPhyses();
+    if(phys.length===0){
+      $("planOutput").innerHTML = `<div class="card"><div class="range-box danger">Vink minstens één groeischijf aan om te remmen.</div></div>`;
+      return;
+    }
+    const segs = { femur:rFemur||null, tibia:rTibia||null };
+    const bonesSel = new Set(phys.map(p=>PHYSIS_BONE[p]));
+    const singleBone = (bonesSel.size===1);
+    const residualMode = singleBone ? $("planResidualMode").value : "leave";
+
+    // Doel-restverschil (TOTAAL been). Bij 'compensate' met één bot mag het hele been binnen
+    // acceptMM; bij 'leave' of meerdere botten geldt acceptMM direct als totaal-restverschil.
+    const targetTotalMM = acceptMM;
+    const mp = planMultiPhysisEpi(segs, sex, phys, targetTotalMM, useMonths);
+
+    const physNL = {distalFemur:"distale femur",proximalFemur:"proximale femur",
+                    proximalTibia:"proximale tibia",distalTibia:"distale tibia"};
+    const warnings=[];
+    const correction = Math.max(0, Math.abs(mp.diffNoSurgery) - acceptMM);
+    if(correction<=0){
+      warnings.push("Het verwachte verschil ligt al binnen het geaccepteerde restverschil; een epifysiodese is niet nodig.");
+    }
+    // haalbaarheid: wat blijft er over op het gekozen (bruikbare) moment?
+    const residChosen = Math.abs(mp.chosen.finalDiff - mp.sign*acceptMM);
+    const residAtMin = Math.abs(mp.atMin.finalDiff - mp.sign*acceptMM);
+    if(mp.tooEarly && residAtMin > 20){
+      warnings.push(`⛔ Het rekenkundig optimale moment ligt vóór de minimale operatieleeftijd (${monthsToLabel(mp.minM)}). Op de vroegst bruikbare leeftijd (${ageLabelSkeletal(Math.max(useMonths,mp.minM),{skel:null,cal:null})}) nemen de aangevinkte fyses samen ± ${(mp.atMin.removedTot/10).toFixed(1)} cm weg, terwijl ± ${(correction/10).toFixed(1)} cm nodig is — er blijft dan ± ${(residAtMin/10).toFixed(1)} cm over. Overweeg méér fyses aan te vinken, of (deels) beenverlenging in een gespecialiseerd centrum.`);
+    } else if(correction>0 && residChosen > 20){
+      warnings.push(`Met de aangevinkte fyse(s) blijft er op het gezamenlijke moment nog ± ${(residChosen/10).toFixed(1)} cm over. Vink méér fyses aan (meer remcapaciteit) of overweeg beenverlenging.`);
+    }
+    if(mp.chosen.Te < mp.minM && !mp.tooEarly){
+      warnings.push(`Let op: het gevonden moment (${monthsToLabel(mp.chosen.Te)}) ligt onder het gebruikelijke venster (± ${monthsToLabel(mp.minM)}); te vroeg remmen offert veel totale beenlengte op.`);
+    }
+
+    const treatmentPlan = {
+      strategy:"epiMulti", multi:mp, phys, physNL, residualMode, singleBone,
+      diff: mp.diffNoSurgery, targetMM: acceptMM, correction, warnings
+    };
+    renderPlan({...LAST_CTX, treatmentPlan});
+    if(scrollToPlan) $("planOutput").scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+
+  // ===== LENGTHEN-ONLY: bestaande logica op basis van bot-keuze =====
+  const physisPref = "auto";
+  const highlight = computeHighlight(physisPref);
+  if(!highlight || !highlight[1]){ return; }
+  const secondary = computeSecondary(physisPref, highlight);
+  const hlRes = highlight[1];
+  const hlConst = highlight[2] ? highlight[2].physisConst : null;
+  if(hlConst==null){ return; }
+
+  const treatsBoth = (physisPref==="bothKnee");
+  const planBone = (planStrategy==="lengthen")
+    ? currentLengthenBone()
+    : (highlight[0]==="Femur" ? "femur" : highlight[0]==="Tibia" ? "tibia" : "femur");
+  const residualMode = treatsBoth ? "leave" : $("planResidualMode").value;
+
+  let otherResidualMM = 0;
+  if(!treatsBoth){
+    if(planBone==="femur" && rTibia) otherResidualMM = Math.abs(rTibia.expectedDiffNoSurgery);
+    else if(planBone==="tibia" && rFemur) otherResidualMM = Math.abs(rFemur.expectedDiffNoSurgery);
+  }
+
+  // bij lengthen-only: verleng het gekozen bot over zijn eigen verschil
+  const baseSeg = (planStrategy==="lengthen")
+    ? (planBone==="femur" ? rFemur : rTibia)
+    : hlRes;
+  const baseConst = (planStrategy==="lengthen")
+    ? (planBone==="femur" ? PHYSIS.distalFemur : PHYSIS.proximalTibia)
+    : hlConst;
+
+  const treatmentPlan = buildTreatmentPlan(baseSeg, sex, baseConst, planBone, planStrategy, acceptMM, useMonths, maxSessions, residualMode, otherResidualMM);
+  treatmentPlan.segLabel = (planStrategy==="lengthen") ? (planBone==="femur"?"Femur":"Tibia") : highlight[0];
+  treatmentPlan.physisLabel = (planStrategy==="lengthen") ? (planBone==="femur"?"distale femur":"proximale tibia") : highlight[3];
+  treatmentPlan.treatsBoth = treatsBoth;
+
+  if(treatsBoth && rFemur && rTibia){
+    const dF = Math.abs(rFemur.expectedDiffNoSurgery);
+    const dT = Math.abs(rTibia.expectedDiffNoSurgery);
+    const dTot = dF + dT;
+    const targetF = dTot>0 ? acceptMM * (dF/dTot) : 0;
+    const targetT = dTot>0 ? acceptMM * (dT/dTot) : 0;
+    const signF = rFemur.expectedDiffNoSurgery>=0?1:-1;
+    const signT = rTibia.expectedDiffNoSurgery>=0?1:-1;
+    // eigen optimale momenten (waar elk segment op zichzelf het doel haalt)
+    const bF = ageForTargetDiff(rFemur, sex, PHYSIS.distalFemur, signF*targetF, useMonths);
+    const bT = ageForTargetDiff(rTibia, sex, PHYSIS.proximalTibia, signT*targetT, useMonths);
+
+    // ÉÉN GEZAMENLIJK MOMENT: zoek het moment dat het TOTALE resterende verschil minimaliseert
+    // als beide fyses OP DAT MOMENT tegelijk worden geremd. Reken per moment het werkelijke
+    // eindverschil van femur én tibia uit (niet elk op zijn eigen optimum!).
+    const minM = EPI_MIN_SKELETAL_MONTHS[sex];
+    let bestJoint=null;
+    for(let Te=Math.max(useMonths,minM); Te<=MATURITY_MONTHS; Te++){
+      const fAt = diffIfOperateAt(rFemur, Te, sex, PHYSIS.distalFemur);
+      const tAt = diffIfOperateAt(rTibia, Te, sex, PHYSIS.proximalTibia);
+      // resterend totaal verschil t.o.v. de per-segment doelen
+      const resF = Math.abs(fAt.finalDiff - signF*targetF);
+      const resT = Math.abs(tAt.finalDiff - signT*targetT);
+      const totalRes = resF + resT;
+      if(bestJoint===null || totalRes < bestJoint.totalRes){
+        bestJoint = { Te, totalRes, fFinalDiff:fAt.finalDiff, tFinalDiff:tAt.finalDiff,
+                      fRemoved:fAt.removed, tRemoved:tAt.removed, resF, resT };
+      }
+    }
+
+    treatmentPlan.bothSegments = {
+      femur: { removed:bF.removed, Te:bF.Te, recTe:Math.max(bF.Te, minM), targetMM:targetF,
+               ownOptimumTe:bF.Te },
+      tibia: { removed:bT.removed, Te:bT.Te, recTe:Math.max(bT.Te, minM), targetMM:targetT,
+               ownOptimumTe:bT.Te }
+    };
+    // het gezamenlijke moment is nu het compromis, niet zomaar het vroegste optimum
+    treatmentPlan.bothCombinedTe = bestJoint.Te;
+    treatmentPlan.bothCombinedRecTe = Math.max(bestJoint.Te, minM);
+    // werkelijke uitkomst op het gezamenlijke moment
+    treatmentPlan.bothJoint = {
+      Te: bestJoint.Te,
+      femurFinalDiff: bestJoint.fFinalDiff,   // signed, t.o.v. gelijk
+      tibiaFinalDiff: bestJoint.tFinalDiff,
+      femurRemoved: bestJoint.fRemoved,
+      tibiaRemoved: bestJoint.tRemoved,
+      totalResidual: bestJoint.fFinalDiff + bestJoint.tFinalDiff
+    };
+    // Kunnen beide op één moment hun doel halen? Beoordeel op het WERKELIJKE restverschil dat
+    // op het gezamenlijke moment overblijft. Een kleine gap (enkele mm rest) is normaal en geen
+    // conflict; pas bij een fors restverschil (> 2,5 cm in een segment) werkt één moment niet.
+    const optimaGapMonths = Math.abs(bF.Te - bT.Te);
+    const worstResidual = Math.max(Math.abs(bestJoint.fFinalDiff), Math.abs(bestJoint.tFinalDiff));
+    treatmentPlan.bothConflict = worstResidual > 25;
+    treatmentPlan.bothOptimaGap = optimaGapMonths;
+  }
+
+  renderPlan({...LAST_CTX, highlight, secondary, hlRes, hlConst, treatmentPlan});
+  if(scrollToPlan) $("planOutput").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+
+/* ===================== OUTPUT RENDER ===================== */
+function renderOutput(ctx){
+  const {sex,unit,ctype,useMonths,skel,rFemur,rTibia,rTotal,
+         priorMode,damagedLabel,restLabel,uncertaintyRange,shaftIntact}=ctx;
+  const sexNL = sex==="girl"?"meisje":"jongen";
+  const ageLabel = monthsToLabel(useMonths);
+  const ageSource = skel!==null ? "skeletleeftijd" : "kalenderleeftijd";
+  const M = multiplierAt(useMonths, sex);
+
+  let h = `<div class="card" id="outputCard">
+    <h2 style="margin:0">Uitkomst</h2>`;
+
+  // ---- algemene regel (compact, bovenaan) ----
+  h += `<div style="font-size:13px;color:var(--ink-soft);margin:10px 0 22px;padding-bottom:14px;border-bottom:1px solid var(--line)">
+    ${sexNL}, ${ageLabel} (${ageSource}) · multiplier ${M.toFixed(3)} · ${ctype==="congenital"?"congenitaal":(shaftIntact?"verworven — midschachtfractuur (fyse intact)":"verworven")}
+    ${damagedLabel?`· beschadigde fyse: ${damagedLabel} (restgroei: ${restLabel})`:``}</div>`;
+
+  // =========================================================
+  // BLOK 1 — PROGNOSE ZONDER INGREEP (meest prominent)
+  // =========================================================
+  const totalDiff = rTotal ? rTotal.expectedDiffNoSurgery : null;
+  h += `<div class="out-sec"><h3><span class="num">1</span>Prognose zonder ingreep</h3>`;
+
+  if(rTotal){
+    const matLabel = sex==="girl" ? "± 14 jaar (skeletleeftijd, multiplier 1,0)" : "± 17 jaar (skeletleeftijd, multiplier 1,0)";
+    h += `<div class="headline-result">
+      <div class="big">Verwacht beenlengteverschil: ${(Math.abs(totalDiff)/10).toFixed(1)} cm</div>
+      <div class="sub">Op skeletmaturiteit, als er niets gedaan wordt. De
+      <span class="pill long">langere ${rTotal.longSide}</span> en
+      <span class="pill short">kortere ${rTotal.shortSide}</span> zijde.
+      Patiënt is naar verwachting uitgegroeid op ${matLabel}.</div></div>`;
+  }
+
+  // tabel met verwachte lengtes per segment
+  const shortB = rTotal ? badge(rTotal.shortSide, true) : "";
+  const longB  = rTotal ? badge(rTotal.longSide, true) : "";
+  function progRow(label, r){
+    if(!r) return "";
+    const diffNow = r.longNow - r.shortNow;
+    return `<tr><td>${label}</td>
+      <td class="num">${fmtLen(r.shortNow)}</td><td class="num">${fmtLen(r.longNow)}</td>
+      <td class="num">${(diffNow/10).toFixed(1)} cm</td>
+      <td class="num">${fmtLen(r.Sm)}</td><td class="num">${fmtLen(r.Lm)}</td>
+      <td class="num"><strong>${(r.expectedDiffNoSurgery/10).toFixed(1)} cm</strong></td></tr>`;
+  }
+  h += `<table class="data" style="margin-top:6px"><thead><tr>
+      <th>Segment</th>
+      <th style="text-align:right">Kort nu ${shortB}</th><th style="text-align:right">Lang nu ${longB}</th>
+      <th style="text-align:right">Verschil nu</th>
+      <th style="text-align:right">Kort eind ${shortB}</th><th style="text-align:right">Lang eind ${longB}</th>
+      <th style="text-align:right">Verschil eind</th></tr></thead><tbody>
+      ${progRow("Femur", rFemur)}
+      ${progRow("Tibia", rTibia)}
+      ${rTotal?`<tr style="background:var(--accent-soft)">${progRow("Totale been", rTotal).replace('<tr>','').replace('</tr>','')}</tr>`:''}
+    </tbody></table>`;
+
+  // huidige verschillen + inhibitie
+  h += `<table class="data" style="margin-top:10px"><tbody>`;
+  if(rTotal){
+    const dNow = rTotal.longNow - rTotal.shortNow;
+    h += `<tr><td>Huidig verschil (totale been)</td><td class="num">${(dNow/10).toFixed(1)} cm</td></tr>`;
+  }
+  if(rTotal && rTotal.I!==null)
+    h += `<tr><td>${priorMode==="yes"?"Gemeten":"Effectieve"} groeiremming aangedaan been</td><td class="num">${Math.round(rTotal.I*100)}%</td></tr>`;
+  h += `</tbody></table>`;
+
+  // ===== Uitgeschreven berekening (uitklapbaar) — zodat je zelf kunt narekenen =====
+  {
+    const Msh = rFemur?rFemur.Mnow_short:(rTibia?rTibia.Mnow_short:M);
+    const Mlo = rFemur?rFemur.Mnow_long:(rTibia?rTibia.Mnow_long:M);
+    // per-segment berekening uitschrijven
+    function calcBlock(label, r){
+      if(!r) return "";
+      const shortCm=(r.shortNow/10).toFixed(1), longCm=(r.longNow/10).toFixed(1);
+      const SmCm=(r.Sm/10).toFixed(1), LmCm=(r.Lm/10).toFixed(1);
+      let rows = `<div style="margin-top:10px;margin-bottom:2px"><strong>${label}</strong></div>`;
+      // lange (gezonde) zijde: altijd normale doorgroei
+      rows += `<div style="font-family:monospace;font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.7">`;
+      rows += `lang eind &nbsp;= lang nu × M = ${longCm} × ${r.Mnow_long.toFixed(3)} = <strong>${LmCm} cm</strong><br>`;
+      // korte (aangedane) zijde: hangt af van type
+      if(shaftIntact){
+        const remain=(r.longNow*(r.Mnow_long-1)/10).toFixed(1);
+        rows += `restgroei (beide fyses, intact) = lang nu × (M−1) = ${longCm} × ${(r.Mnow_long-1).toFixed(3)} = ${remain} cm<br>`;
+        rows += `kort eind &nbsp;= kort nu + restgroei (zelfde absolute groei als lang)<br>`;
+        rows += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${shortCm} + ${remain} = <strong>${SmCm} cm</strong>`;
+      } else if(ctype==="congenital"){
+        rows += `kort eind &nbsp;= kort nu × M = ${shortCm} × ${r.Mnow_short.toFixed(3)} = <strong>${SmCm} cm</strong>`;
+      } else if(priorMode==="yes"){
+        const I=r.I;
+        const remainMM = r.shortNow*(r.Mnow_short-1);
+        const remain=(remainMM/10).toFixed(1);
+        const share = (r._seg && r._seg._affectedShare!=null) ? r._seg._affectedShare : 1;
+        const dPhys = r._seg.damagedPhysis;
+        const isAffectedBone = PHYSIS_BONE[dPhys]===r._seg.boneName;
+        if(!isAffectedBone){
+          rows += `kort eind &nbsp;= kort nu × M = ${shortCm} × ${r.Mnow_short.toFixed(3)} = <strong>${SmCm} cm</strong> <span style="color:var(--ink-soft)">(dit bot is niet aangedaan → geen remming)</span>`;
+        } else if(share < 1){
+          const physNL = {distalFemur:"distale femur",proximalFemur:"proximale femur",proximalTibia:"proximale tibia",distalTibia:"distale tibia"}[dPhys];
+          const healthy = (1-share);
+          const factor = healthy + (1-I)*share;
+          const boneNm = r._seg.boneName; // "femur" of "tibia"
+          const shares = BONE_SHARE[boneNm] || {};
+          // mm/jaar-opsplitsing (Menelaus) van de twee fyses in dit bot, voor de transparantie
+          const mmParts = Object.keys(shares).map(ph=>({ph, mm:MENELAUS_MM[ph]}));
+          const mmSum = mmParts.reduce((s,p)=>s+p.mm,0);
+          const physMM = MENELAUS_MM[dPhys];
+          const mmLine = mmParts.map(p=>{
+            const nm = {distalFemur:"dist. femur",proximalFemur:"prox. femur",proximalTibia:"prox. tibia",distalTibia:"dist. tibia"}[p.ph];
+            return `${nm} ${p.mm}`;
+          }).join(" + ");
+          rows += `restgroei kort (normaal) = kort nu × (M−1) = ${shortCm} × ${(r.Mnow_short-1).toFixed(3)} = ${remain} cm<br>`;
+          rows += `<span style="color:var(--ink-soft)">aandeel per fyse (Menelaus, mm/jr): ${mmLine} = ${mmSum} mm/jr → ${physNL} = ${physMM}/${mmSum} ≈ ${Math.round(share*100)}%</span><br>`;
+          rows += `alleen de ${physNL} (${Math.round(share*100)}% van de botgroei) is aangedaan; de overige ${Math.round(healthy*100)}% groeit normaal door<br>`;
+          rows += `groeifactor = gezond ${Math.round(healthy*100)}% + (1 − ${I.toFixed(2)}) × aangedaan ${Math.round(share*100)}% = ${factor.toFixed(2)}<br>`;
+          rows += `kort eind &nbsp;= kort nu + groeifactor × restgroei = ${shortCm} + ${factor.toFixed(2)} × ${remain} = <strong>${SmCm} cm</strong>`;
+        } else {
+          rows += `restgroei kort (normaal) = kort nu × (M−1) = ${shortCm} × ${(r.Mnow_short-1).toFixed(3)} = ${remain} cm<br>`;
+          rows += `kort eind &nbsp;= kort nu + (1 − remming) × restgroei = ${shortCm} + (1 − ${I.toFixed(2)}) × ${remain} = <strong>${SmCm} cm</strong>`;
+        }
+      } else {
+        const remain=(r.shortNow*(r.Mnow_short-1)/10).toFixed(1);
+        const fac = (r.Sm - r.shortNow) / Math.max(1e-9, r.shortNow*(r.Mnow_short-1));
+        rows += `restgroei kort (normaal) = kort nu × (M−1) = ${shortCm} × ${(r.Mnow_short-1).toFixed(3)} = ${remain} cm<br>`;
+        rows += `kort eind &nbsp;= kort nu + groeifactor × restgroei<br>`;
+        rows += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= ${shortCm} + ${fac.toFixed(2)} × ${remain} = <strong>${SmCm} cm</strong>`;
+      }
+      rows += `<br>verschil &nbsp;&nbsp;= lang eind − kort eind = ${LmCm} − ${SmCm} = <strong>${(r.expectedDiffNoSurgery/10).toFixed(1)} cm</strong>`;
+      rows += `</div>`;
+      return rows;
+    }
+    let inhibExplain = "";
+    if(priorMode==="yes" && rFemur && rFemur._seg && rFemur._seg.history && rFemur._seg.history.length>=2){
+      const hist=rFemur._seg.history;
+      if(hist.length===2){
+        const a=hist[0], b=hist[1];
+        const gS=((b.short-a.short)/10).toFixed(1), gL=((b.long-a.long)/10).toFixed(1);
+        inhibExplain = `<div style="font-family:monospace;font-size:12.5px;color:var(--ink);margin-top:8px;line-height:1.7">`+
+          `<strong>Groeiremming (uit twee metingen, femur):</strong><br>`+
+          `groei kort = ${(b.short/10).toFixed(1)} − ${(a.short/10).toFixed(1)} = ${gS} cm<br>`+
+          `groei lang = ${(b.long/10).toFixed(1)} − ${(a.long/10).toFixed(1)} = ${gL} cm<br>`+
+          `remming &nbsp;= 1 − (groei kort ÷ groei lang) = 1 − (${gS} ÷ ${gL}) = <strong>${Math.round(rFemur.I*100)}%</strong>`+
+          `</div>`;
+      } else {
+        // meerdere intervallen: trend (gewogen gemiddelde)
+        let rowsHtml = "";
+        for(let i=0;i<hist.length-1;i++){
+          const a=hist[i], b=hist[i+1];
+          const gS=(b.short-a.short)/10, gL=(b.long-a.long)/10;
+          const Ii = gL>0 ? Math.max(0,Math.min(1,1-(gS/gL))) : null;
+          rowsHtml += `interval ${monthsToLabel(a.months)}→${monthsToLabel(b.months)}: `+
+            `kort +${gS.toFixed(1)}, lang +${gL.toFixed(1)} → remming ${Ii==null?"—":Math.round(Ii*100)+"%"}<br>`;
+        }
+        inhibExplain = `<div style="font-family:monospace;font-size:12.5px;color:var(--ink);margin-top:8px;line-height:1.7">`+
+          `<strong>Groeiremming — trend over ${hist.length} metingen (femur):</strong><br>`+
+          rowsHtml+
+          `<span style="color:var(--ink-soft)">gewogen gemiddelde (naar groei gezonde zijde per interval) = <strong>${Math.round(rFemur.I*100)}%</strong></span>`+
+          `</div>`;
+      }
+    }
+    // interpolatie-uitleg: waarom wijkt de multiplier af van de ronde tabelwaarde?
+    const md = multiplierDetail(useMonths, sex);
+    let interpNote = "";
+    if(md.interpolated){
+      const loLbl = monthsToLabel(md.loM), hiLbl = monthsToLabel(md.hiM);
+      interpNote = `<div style="font-size:12px;color:var(--ink);margin-top:6px;padding:8px 10px;background:var(--accent-soft);border-radius:6px">
+        <strong>Waarom ${md.val.toFixed(3)} en niet de ronde tabelwaarde?</strong><br>
+        De literatuur geeft multipliers op hele leeftijden. Dit kind is ${ageLabel} — daartussenin. De tool interpoleert lineair, zodat de extra maanden meetellen:<br>
+        <span style="font-family:monospace;font-size:12px">
+        ${loLbl}: ${md.loV.toFixed(3)} &nbsp;→&nbsp; ${hiLbl}: ${md.hiV.toFixed(3)}<br>
+        op ${ageLabel} = ${md.loV.toFixed(3)} + ${(md.f).toFixed(2)} × (${md.hiV.toFixed(3)} − ${md.loV.toFixed(3)}) = <strong>${md.val.toFixed(3)}</strong></span><br>
+        <span style="color:var(--ink-soft)">Reken je met de ronde tabelwaarde ${md.loV.toFixed(3)} op ${loLbl}, dan kom je iets hoger uit; interpoleren is nauwkeuriger omdat het kind ${useMonths-md.loM===1?"1 maand":`${useMonths-md.loM} maanden`} ouder is dan die ronde leeftijd.</span>
+      </div>`;
+    }
+    h += `<details style="margin-top:12px"><summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)">Bereken­methode — hoe kom je aan deze getallen?</summary>
+      <div class="verify" style="margin-top:8px">
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px">
+          Multiplier-methode (Paley): <strong>eindlengte = huidige lengte × multiplier</strong>. De multiplier hoort bij de ${ageSource} (${ageLabel}) en het geslacht.
+          Multiplier korte zijde = <strong>${Msh.toFixed(3)}</strong>, lange zijde = <strong>${Mlo.toFixed(3)}</strong>${Math.abs(Msh-Mlo)<0.0005?" (gelijk, beide benen even oud)":""}.
+          ${priorMode==="yes" ? `<br><span style="font-style:italic">Bij een verworven verschil groeit alleen de aangedane groeischijf minder; de andere fyses in hetzelfde bot groeien normaal door. Hun aandeel in de botgroei komt uit de groeisnelheid per fyse (Menelaus, mm/jr): femur ± dist. 10 / prox. 4, tibia ± prox. 6 / dist. 5. Daarmee wordt hieronder de groeifactor en het eindverschil opgebouwd.</span>` : ""}
+        </div>
+        ${interpNote}
+        ${calcBlock("Femur", rFemur)}
+        ${calcBlock("Tibia", rTibia)}
+        ${inhibExplain}
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-top:10px;font-style:italic">
+          Resterende groei = lengte × (multiplier − 1): de multiplier geeft de volwassen lengte (lengte × M), en door de huidige lengte eraf te halen (− 1) houd je alleen de nog te verwachten groei over.
+          Kleine afrondingsverschillen (± 0,1 cm) ontstaan doordat de tool intern in millimeters met volledige precisie rekent en pas bij het tonen afrondt.
+        </div>
+      </div></details>`;
+  }
+
+  // ===== Uitklapbaar statustekst-blok (kant-en-klaar voor in het dossier) =====
+  // Staat direct onder de prognose, zodat het op dezelfde plek verschijnt bij
+  // congenitaal én verworven (anders schuift het bij verworven ver naar beneden).
+  if(rFemur && rTibia && rTotal){
+    function RL(r){
+      const rightIsShort = r.shortSide==="rechts";
+      return { R: Math.round(rightIsShort?r.shortNow:r.longNow),
+               L: Math.round(rightIsShort?r.longNow:r.shortNow) };
+    }
+    const f=RL(rFemur), t=RL(rTibia), tot=RL(rTotal);
+    const dF=Math.abs(f.R-f.L), dT=Math.abs(t.R-t.L), dTot=Math.abs(tot.R-tot.L);
+    const eindMM = Math.round(Math.abs(rTotal.expectedDiffNoSurgery));
+    const statusText =
+`X-totale benen:
+RBB ${f.R}mm, LBB ${f.L}mm; Delta ${dF}mm
+ROB ${t.R}mm, LOB ${t.L}mm; Delta ${dT}mm
+Totale been: R ${tot.R}mm, L ${tot.L}mm; Delta ${dTot}mm
+Verwacht eindverschil: ${eindMM}mm`;
+    h += `<details style="margin-top:14px"><summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)">Tekstblok voor in de status</summary>
+      <div style="margin-top:8px">
+        <pre id="statusText" style="background:#f3f5f7;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;font-size:13px;font-family:'SFMono-Regular',ui-monospace,Menlo,monospace;white-space:pre-wrap;margin:0">${statusText}</pre>
+        <button class="ghost" id="copyStatusBtn" style="margin-top:8px">Kopieer statustekst</button>
+      </div></details>`;
+  }
+
+  // ===== Interpretatie van de GEMETEN groeiremming (alleen bij twee metingen) =====
+  if(priorMode==="yes" && (rFemur || rTibia)){
+    // bepaal het aangedane segment (grootste gemeten remming)
+    const segs=[["femur",rFemur],["tibia",rTibia]].filter(s=>s[1] && s[1].I!==null);
+    let worst=null;
+    segs.forEach(([nm,r])=>{ if(worst===null || r.I>worst.I) worst={name:nm, I:r.I, r}; });
+    if(worst){
+      const pct = Math.round(worst.I*100);
+      let cls="range-box", head, body;
+      if(pct <= 10){
+        cls="range-box good";
+        head = "De groeischijf lijkt niet ernstig beschadigd.";
+        body = `De gemeten groei tussen de twee metingen laat een remming van slechts ${pct}% zien: het aangedane (${worst.name==="femur"?"femur":"tibia"}) is over die periode vrijwel even hard meegegroeid als de gezonde zijde. Dat wijst erop dat de groeischijf functioneel goeddeels intact is en normaal doorgroeit. Het huidige verschil gedraagt zich dan grotendeels als een vast, proportioneel meegroeiend verschil in plaats van een verschil dat gestaag toeneemt.`;
+      } else if(pct <= 40){
+        head = "De groeischijf groeit deels door, met enige remming.";
+        body = `De gemeten remming van ${pct}% betekent dat het aangedane ${worst.name==="femur"?"femur":"tibia"} langzamer groeit dan de gezonde zijde, maar niet volledig stilstaat. Het verschil zal daardoor geleidelijk toenemen tot skeletmaturiteit. Herhaal de meting om de trend te bevestigen.`;
+      } else {
+        head = "De groeischijf is duidelijk aangedaan.";
+        body = `De gemeten remming van ${pct}% wijst op een fors beperkte groei van het aangedane ${worst.name==="femur"?"femur":"tibia"}. Het verschil neemt tot skeletmaturiteit merkbaar toe. De op twee metingen gebaseerde prognose is nu betrouwbaarder dan een aanname vooraf.`;
+        cls="range-box";
+      }
+      // groeitabel per segment: werkelijke groei kort/lang + remming
+      function growthRows(){
+        let rows="";
+        [["Femur",rFemur],["Tibia",rTibia]].forEach(([label,r])=>{
+          if(!r || r.I===null || !r._seg) return;
+          const s=r._seg;
+          if(s.shortPrev==null || s.longPrev==null) return;
+          const gShort = r.shortNow - s.shortPrev;   // groei aangedane (korte) zijde
+          const gLong  = r.longNow  - s.longPrev;    // groei gezonde (lange) zijde
+          const pctSeg = Math.round(r.I*100);
+          const ratio  = gLong>0 ? Math.round((gShort/gLong)*100) : 0;
+          rows += `<tr>
+            <td>${label}</td>
+            <td class="num">${(gShort/10).toFixed(1)} cm</td>
+            <td class="num">${(gLong/10).toFixed(1)} cm</td>
+            <td class="num">${ratio}%</td>
+            <td class="num"><strong>${pctSeg}%</strong></td></tr>`;
+        });
+        return rows;
+      }
+      const gtRows = growthRows();
+
+      h += `<div class="${cls}" style="margin-top:14px">
+        <strong>${head}</strong><br>${body}`;
+      if(gtRows){
+        h += `<table class="data" style="margin-top:10px;margin-bottom:4px"><thead><tr>
+          <th>Segment</th>
+          <th style="text-align:right">Groei korte zijde</th>
+          <th style="text-align:right">Groei lange zijde</th>
+          <th style="text-align:right">Verhouding</th>
+          <th style="text-align:right">Remming</th></tr></thead><tbody>
+          ${gtRows}
+        </tbody></table>
+        <div style="font-size:12px;color:var(--ink-soft)">"Groei" = toename in lengte tussen de twee metingen. "Verhouding" = groei korte zijde ÷ groei lange zijde. "Remming" = 100% − verhouding (het deel van de normale groei dat de korte zijde miste). Bij een niet-aangedaan segment liggen beide dicht bij elkaar (remming ≈ 0%).</div>`;
+      }
+      h += `<div style="font-size:12px;color:var(--ink-soft);margin-top:8px">Berekend uit het werkelijke groeiverschil tussen de metingen (groei-inhibitie I = 1 − groei aangedaan / groei gezond), per het <strong>aangeklikte</strong> beschadigde segment. Andere segmenten groeien proportioneel (0% remming), ook als ze toevallig een klein meetverschil tonen.</div></div>`;
+
+    }
+
+    // ===== Groeigrafiek bij >= 3 metingen (totale been, kort vs lang) =====
+    const histTot = rTotal && rTotal._seg ? rTotal._seg.history : null;
+    if(histTot && histTot.length>=3){
+      h += growthChartSVG(histTot, rTotal.shortSide, rTotal.longSide);
+    }
+  }
+
+  // ===== Bandbreedte bij onzekere restgroei =====
+  if(uncertaintyRange && uncertaintyRange.total){
+    const rt = uncertaintyRange.total;
+    const diffDead = Math.abs(rt.diffDead);      // fyse volledig gesloten (pessimistisch)
+    const diffNormal = Math.abs(rt.diffNormal);  // normale doorgroei (optimistisch)
+    const lo = Math.min(diffDead, diffNormal);
+    const hi = Math.max(diffDead, diffNormal);
+    h += `<div class="range-box" style="margin-top:14px">
+      <strong>Bandbreedte — restgroei van de beschadigde fyse is onbekend.</strong><br>
+      De tabel hierboven toont de <strong>pessimistische</strong> aanname: de beschadigde fyse is volledig gesloten
+      (geen restgroei). Dat geeft het <em>grootste</em> te verwachten verschil en is de veiligste ondergrens voor de planning.
+      De werkelijke uitkomst ligt tussen twee uitersten:
+      <table class="data" style="margin-top:8px;margin-bottom:4px"><thead><tr>
+        <th>Aanname beschadigde fyse</th><th style="text-align:right">Verwacht eindverschil</th></tr></thead><tbody>
+        <tr><td>Volledig gesloten (0% restgroei) — <em>getoond in tabel</em></td><td class="num"><strong>${(diffDead/10).toFixed(1)} cm</strong></td></tr>
+        <tr><td>Normale doorgroei (100%)</td><td class="num">${(diffNormal/10).toFixed(1)} cm</td></tr>
+      </tbody></table>
+      Reken dus met een verwacht verschil tussen <strong>${(lo/10).toFixed(1)}</strong> en <strong>${(hi/10).toFixed(1)} cm</strong>.
+      Een tweede meting later in de tijd maakt dit nauwkeuriger (kies dan "eerdere meting = ja").</div>`;
+  }
+
+  h += `</div>`;
+
+  h += `<div class="out-sec"><h3><span class="num">i</span>Toelichting &amp; bronnen</h3>
+    <p style="font-size:13px;margin:0 0 10px">De prognose gebruikt de multiplier-methode (Paley): verwachte volwassen lengte =
+    huidige lengte × multiplier. Bij verworven verschillen wordt de vertraagde groei van het aangedane been meegenomen
+    (gemeten groei-inhibitie bij metingen in de tijd, of een schatting). De remming treft daarbij <strong>alleen de aangedane
+    groeischijf</strong>: elke fyse levert een vast aandeel van de botgroei, en de niet-aangedane fyse(s) in hetzelfde bot
+    groeien normaal door. Fyse-aandelen: distale femur 71% · proximale femur 29% · proximale tibia 57% · distale tibia 43%
+    (Menelaus / Dimeglio: distale femur ± 10 mm/jr, proximale tibia ± 6 mm/jr, distale tibia ± 5 mm/jr, proximale femur ± 4 mm/jr).
+    Een <em>remmende</em> epifysiodese wordt rond de puberteitsgroeispurt gepland (skeletleeftijd ± 14 jr jongens / 12 jr meisjes);
+    te vroeg ingrijpen offert beenlengte op. Beenverlenging is een alternatief bij grotere verschillen of bij wens tot
+    lengtebehoud. Botleeftijd is betrouwbaarder dan kalenderleeftijd.</p>
+    <p style="font-size:12px;color:var(--ink-soft);margin:0">
+    Bronnen: Paley D et&nbsp;al. Multiplier method. J&nbsp;Bone Joint Surg Am 2000;82(10):1432-46. ·
+    Menelaus MB. Correction of leg length discrepancy by epiphysial arrest. J&nbsp;Bone Joint Surg Br 1966;48:336-9. ·
+    Diméglio A. Growth in pediatric orthopaedics. J&nbsp;Pediatr Orthop 2001. · POSNA Study Guide, Epiphyseodesis Prediction &amp; Technique. ·
+    Aguilar JA et&nbsp;al. Clinical validation of the multiplier method, Part&nbsp;II. J&nbsp;Pediatr Orthop 2005;25:192-6.
+    Ongeacht de methode treden bij een deel van de patiënten onvoorspelbare resultaten op; informeer patiënt en ouders hierover.</p></div>`;
+
+  h += `</div>`;
+
+  const out=$("output");
+  out.innerHTML = h;
+  out.classList.add("show");
+  const csb=$("copyStatusBtn");
+  if(csb) csb.addEventListener("click",()=>{
+    const st=$("statusText"); if(!st) return;
+    navigator.clipboard.writeText(st.textContent).then(()=>{ csb.textContent="Gekopieerd ✓"; setTimeout(()=>csb.textContent="Kopieer statustekst",1500); });
+  });
+  out.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ===================== STAP 2 RENDER: PLAN + SIMULATIE ===================== */
+function renderPlan(ctx){
+  const {sex,useMonths,skel,cal,rFemur,rTibia,rTotal,treatmentPlan,secondary,hlRes,hlConst}=ctx;
+  const minM = EPI_MIN_SKELETAL_MONTHS[sex];
+  const ageCtx = {skel, cal};
+  let h = "";
+
+  // ===== EPI-ONLY, multi-fyse: één gezamenlijk moment op het hele been =====
+  if(treatmentPlan && treatmentPlan.strategy==="epiMulti"){
+    const p = treatmentPlan;
+    const mp = p.multi;
+    const longSide = rTotal ? rTotal.longSide : "";
+    const shortSide = rTotal ? rTotal.shortSide : "";
+    const longB = rTotal ? badge(longSide,true) : "";
+    const chosen = mp.chosen;
+    const combTe = Math.max(chosen.Te, mp.minM);
+    const physLabelList = p.phys.map(x=>p.physNL[x]).join(" + ");
+
+    h += `<div class="card"><div class="out-sec"><h3><span class="num">★</span>Behandelplan — epifysiodese (groei remmen)</h3>`;
+
+    if(p.correction<=0){
+      h += `<div class="range-box">Het verwachte verschil (${(Math.abs(p.diff)/10).toFixed(1)} cm) ligt al binnen het geaccepteerde restverschil (${(p.targetMM/10).toFixed(1)} cm); een epifysiodese is niet nodig.</div>`;
+    } else {
+      const finalResid = Math.abs(chosen.finalDiff);
+      h += `<div class="headline-result">
+        <div class="big">Te corrigeren: ${(p.correction/10).toFixed(1)} cm</div>
+        <div class="sub">Totaal beenlengteverschil ${(Math.abs(p.diff)/10).toFixed(1)} cm, geaccepteerd restverschil ${(p.targetMM/10).toFixed(1)} cm.
+        Remmen aan de lange ${longSide} zijde ${longB} via: <strong>${physLabelList}</strong>, op één gezamenlijk moment.</div></div>`;
+
+      // Per-fyse tabel: wat neemt elke aangevinkte fyse weg op het gezamenlijke moment?
+      const atChosen = multiPhysisRemovedAt({femur:rFemur||null,tibia:rTibia||null}, sex, p.phys, combTe);
+      h += `<table class="data" style="margin-top:8px"><thead><tr>
+          <th>Geremde groeischijf (lange ${longSide} zijde ${longB})</th>
+          <th style="text-align:right">Groei/jr</th>
+          <th style="text-align:right">Aandeel bot</th>
+          <th style="text-align:right">Remt op gez. moment</th></tr></thead><tbody>`;
+      p.phys.forEach(ph=>{
+        const B = PHYSIS_BONE[ph];
+        const share = (BONE_SHARE[B] && BONE_SHARE[B][ph]!=null) ? BONE_SHARE[B][ph] : 0;
+        const rem = atChosen.perPhysis[ph] ? atChosen.perPhysis[ph].removedMM : 0;
+        h += `<tr><td>${p.physNL[ph].charAt(0).toUpperCase()+p.physNL[ph].slice(1)} <span style="color:var(--ink-soft)">(${B==="femur"?"femur":"tibia"})</span></td>
+          <td class="num">± ${MENELAUS_MM[ph]} mm/jr</td>
+          <td class="num">${Math.round(share*100)}%</td>
+          <td class="num">± ${(rem/10).toFixed(1)} cm</td></tr>`;
+      });
+      h += `<tr style="background:var(--accent-soft)"><td><strong>Gezamenlijk moment — totaal weggenomen</strong></td>
+          <td class="num"></td><td class="num"></td>
+          <td class="num"><strong>± ${(atChosen.removedTot/10).toFixed(1)} cm</strong></td></tr>
+        <tr style="background:var(--accent-soft)"><td><strong>Gerichte skeletleeftijd epifysiodese</strong></td>
+          <td class="num"></td><td class="num"></td>
+          <td class="num"><strong>${mp.tooEarly?"vanaf ":""}${ageLabelSkeletal(combTe, ageCtx)}</strong></td></tr>
+        </tbody></table>`;
+
+      // Eindsituatie
+      const residTxt = finalResid<5 ? "vrijwel gelijk (< 0,5 cm)"
+        : `± ${(finalResid/10).toFixed(1)} cm ${chosen.finalDiff*mp.sign<0?"restverschil omgekeerd (korte zijde wordt langer)":"restverschil"}`;
+      h += `<div style="font-size:12.5px;color:var(--ink-soft);margin-top:8px">
+        Op het gezamenlijke moment (${ageLabelSkeletal(combTe, ageCtx)}) nemen de aangevinkte fyses samen
+        ± ${(atChosen.removedTot/10).toFixed(1)} cm groei weg van de lange zijde. Verwachte eindsituatie op skeletmaturiteit: <strong>${residTxt}</strong>.</div>`;
+    }
+
+    (p.warnings||[]).forEach(w=>{
+      const danger = /^⛔/.test(w);
+      h += `<div class="range-box${danger?' danger':''}" style="margin-top:8px">${w}</div>`;
+    });
+
+    // Rekenuitleg (uitklapbaar) — hoe komt de weggenomen groei tot stand?
+    if(p.correction>0){
+      const M_Te = multiplierAt(combTe, sex);
+      let rows = "";
+      ["femur","tibia"].forEach(B=>{
+        const r = (B==="femur")?rFemur:rTibia;
+        if(!r) return;
+        const selHere = p.phys.filter(ph=>PHYSIS_BONE[ph]===B);
+        if(selHere.length===0) return;
+        const lenAtTe = r.longNow * (r.Mnow_long / M_Te);
+        const resid = lenAtTe * (M_Te - 1);
+        const shareSum = Math.min(1, selHere.reduce((s,ph)=>s+(BONE_SHARE[B][ph]||0),0));
+        const shareParts = selHere.map(ph=>`${p.physNL[ph]} ${Math.round((BONE_SHARE[B][ph]||0)*100)}%`).join(" + ");
+        rows += `<div style="margin-bottom:6px">`+
+          `<strong>${B==="femur"?"Femur":"Tibia"}</strong> (lange zijde ${(r.longNow/10).toFixed(1)} cm nu):<br>`+
+          `restgroei na ${ageLabelSkeletal(combTe,ageCtx)} = lengte op ${monthsToLabel(combTe)} × (M−1) = ${(lenAtTe/10).toFixed(1)} × ${(M_Te-1).toFixed(3)} = ${(resid/10).toFixed(1)} cm<br>`+
+          `geremd aandeel = ${shareParts} = ${Math.round(shareSum*100)}%<br>`+
+          `weggenomen = ${Math.round(shareSum*100)}% × ${(resid/10).toFixed(1)} = <strong>${((shareSum*resid)/10).toFixed(1)} cm</strong></div>`;
+      });
+      h += `<details style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)">Bereken­methode — hoe komt de weggenomen groei tot stand?</summary>
+        <div class="verify" style="margin-top:8px;font-family:monospace;font-size:12.5px;line-height:1.7;color:var(--ink)">
+          ${rows}
+          <div style="font-style:italic;color:var(--ink-soft);margin-top:6px">De fyse-aandelen volgen uit de groeisnelheid per groeischijf (Menelaus, mm/jr): femur dist. 10 / prox. 4, tibia prox. 6 / dist. 5. De epifysiodese neemt alleen het aandeel van de geremde fyse(s) weg; de niet-geremde fyses in hetzelfde bot groeien gewoon door.</div>
+        </div></details>`;
+    }
+
+    h += `</div></div>`;
+    $("planOutput").innerHTML = h;
+    return;
+  }
+
+  if(treatmentPlan && treatmentPlan.combinedSplit){
+    const p = treatmentPlan;
+    const lenLabel = p.lengthenBone==="femur" ? "femur" : "tibia";
+    const shortB = rTotal ? badge(rTotal.shortSide,true) : "";
+    const longB  = rTotal ? badge(rTotal.longSide,true) : "";
+
+    h += `<div class="card"><div class="out-sec"><h3><span class="num">★</span>Behandelplan — combinatie (verlengen + remmen)</h3>`;
+    h += `<div class="headline-result">
+      <div class="big">Te corrigeren: ${(p.correction/10).toFixed(1)} cm</div>
+      <div class="sub">Totaal beenlengteverschil ${(p.diff/10).toFixed(1)} cm, geaccepteerd restverschil ${(p.targetMM/10).toFixed(1)} cm.
+      Verdeling: ± ${(p.lengthenMM/10).toFixed(1)} cm verlengen in het ${lenLabel} (korte ${rTotal?rTotal.shortSide:""} zijde ${shortB}),
+      ± ${(p.epiNeedMM/10).toFixed(1)} cm remmen via de ${p.epiLabel} (lange ${rTotal?rTotal.longSide:""} zijde ${longB}).</div></div>`;
+
+    // verlengingssessies
+    if(p.parts && p.parts.length){
+      h += `<table class="data" style="margin-top:6px"><thead><tr>
+        <th>Verlenging — ${lenLabel} (korte zijde ${shortB})</th><th style="text-align:right">Lengte</th>
+        <th style="text-align:right">Risico</th><th style="text-align:right">Duur distractie</th></tr></thead><tbody>`;
+      p.parts.forEach(part=>{
+        const risk=lengthenRisk(part.mm);
+        h += `<tr><td>PRECICE ${part.bone} — sessie ${part.session}</td>
+          <td class="num">${(part.mm/10).toFixed(1)} cm</td>
+          <td class="num">${risk.label}</td>
+          <td class="num">± ${daysToWeeks(part.durationDays)} wkn</td></tr>`;
+      });
+      h += `</tbody></table>`;
+    } else {
+      h += `<div class="range-box" style="margin-top:6px">Geen verlenging ingesteld; de volledige correctie moet dan via remming.</div>`;
+    }
+
+    // remming
+    if(p.epi){
+      h += `<table class="data" style="margin-top:12px"><tbody>
+        <tr><td>Epifysiodese — ${p.epiLabel} (lange ${rTotal?rTotal.longSide:""} zijde ${longB})</td>
+          <td class="num">remt gericht ± ${(p.epiNeedMM/10).toFixed(1)} cm</td></tr>
+        <tr style="background:var(--accent-soft)"><td><strong>Gerichte leeftijd epifysiodese</strong></td>
+          <td class="num"><strong>${p.epi.tooEarly?"vanaf ":""}${ageLabelSkeletal(p.epi.Te<minM?minM:p.epi.Te, ageCtx)}</strong></td></tr>
+        </tbody></table>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:6px">De verlenging neemt ± ${(p.lengthenMM/10).toFixed(1)} cm voor haar rekening; de epifysiodese vangt de resterende ± ${(p.epiNeedMM/10).toFixed(1)} cm op door de groei van de lange zijde te remmen via de ${p.epiLabel}.</div>`;
+    } else {
+      h += `<div class="range-box" style="margin-top:12px">De verlenging dekt de volledige correctie; een epifysiodese is dan niet nodig.</div>`;
+    }
+
+    p.warnings.forEach(w=>{
+      const danger = /Overcorrectie/.test(w);
+      h += `<div class="range-box${danger?' danger':''}" style="margin-top:8px">${w}</div>`;
+    });
+
+    // ===== eindsituatie: verlengd bot + geremd bot =====
+    if(rFemur && rTibia){
+      const lenBone = p.lengthenBone;
+      const epiIsFemur  = (p.epiChoice==="distalFemur");
+      const epiIsTibia  = (p.epiChoice==="proximalTibia");
+      const epiIsBoth   = (p.epiChoice==="bothKnee");
+      // De verlenging die daadwerkelijk zinvol is, is begrensd door de te corrigeren afstand:
+      // meer verlengen dan de correctie maakt het been alleen maar te lang.
+      const effLengthen = Math.min(p.lengthenTotalMM, p.correction);
+      const dF=Math.abs(rFemur.expectedDiffNoSurgery), dT=Math.abs(rTibia.expectedDiffNoSurgery);
+      const dTot=dF+dT;
+      const remF = epiIsFemur ? p.epiNeedMM : epiIsBoth ? (dTot>0?p.epiNeedMM*(dF/dTot):0) : 0;
+      const remT = epiIsTibia ? p.epiNeedMM : epiIsBoth ? (dTot>0?p.epiNeedMM*(dT/dTot):0) : 0;
+
+      function row(label, r, lengthenAmt, remAmt){
+        const shortFinal = r.Sm + lengthenAmt;
+        const longFinal  = r.Lm - remAmt;
+        const acts=[];
+        if(lengthenAmt>0.5) acts.push(`verlengen +${(lengthenAmt/10).toFixed(1)} cm`);
+        if(remAmt>0.5) acts.push(`remmen −${(remAmt/10).toFixed(1)} cm`);
+        return { label, shortFinal, longFinal, diff: longFinal-shortFinal,
+                 treated: (lengthenAmt>0.5 || remAmt>0.5),
+                 action: acts.length?acts.join(" + "):"—" };
+      }
+      const rowF = row("Femur", rFemur, lenBone==="femur"?effLengthen:0, remF);
+      const rowT = row("Tibia", rTibia, lenBone==="tibia"?effLengthen:0, remT);
+      const rowTot = { label:"Totale been",
+                       shortFinal: rowF.shortFinal+rowT.shortFinal,
+                       longFinal:  rowF.longFinal +rowT.longFinal,
+                       action:"" };
+      rowTot.diff = rowTot.longFinal - rowTot.shortFinal;
+
+      function fr(r){
+        const hl = r.label==="Totale been" ? ' style="background:var(--accent-soft)"' : '';
+        const dCm=(Math.abs(r.diff)/10).toFixed(1);
+        const flipped = r.diff < -0.5;
+        const txt = flipped ? `${dCm} cm <span style="color:var(--short);font-weight:600">(omgekeerd)</span>` : `${dCm} cm`;
+        return `<tr${hl}><td>${r.label}</td>
+          <td style="font-size:12.5px;color:var(--ink-soft)">${r.action}</td>
+          <td class="num">${fmtLen(r.shortFinal)}</td>
+          <td class="num">${fmtLen(r.longFinal)}</td>
+          <td class="num"><strong>${txt}</strong></td></tr>`;
+      }
+      h += `<h3 style="font-size:14px;margin:22px 0 8px;font-weight:700">Verwachte eindsituatie na dit plan</h3>
+        <table class="data"><thead><tr>
+          <th>Segment</th>
+          <th>Ingreep</th>
+          <th style="text-align:right">Kort been ${shortB}</th>
+          <th style="text-align:right">Lang been ${longB}</th>
+          <th style="text-align:right">Restverschil</th></tr></thead><tbody>
+          ${fr(rowF)}${fr(rowT)}${fr(rowTot)}
+        </tbody></table>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:6px">
+        Het ${lenLabel} wordt aan de korte zijde verlengd met ± ${(p.lengthenTotalMM/10).toFixed(1)} cm; de ${p.epiLabel} wordt aan de lange zijde geremd met ± ${(p.epiNeedMM/10).toFixed(1)} cm. Het totale been komt daarmee op ± ${(Math.abs(rowTot.diff)/10).toFixed(1)} cm restverschil.</div>`;
+
+      // Kniehoogte-waarschuwing: als femur en tibia elk een restverschil houden (in tegengestelde
+      // richting), staat de knie links en rechts op verschillende hoogte, ook al is het totale
+      // been gelijk. Klinisch relevant om met de patiënt te bespreken.
+      const restF = Math.abs(rowF.diff), restT = Math.abs(rowT.diff);
+      const KNEE_THRESHOLD = 5; // 0,5 cm
+      if(restF > KNEE_THRESHOLD || restT > KNEE_THRESHOLD){
+        const femurLonger = rowF.diff > 0 ? "lange" : "korte";
+        h += `<div class="range-box" style="margin-top:10px"><strong>Let op — verschil in kniehoogte.</strong>
+          Het totale been komt uit op ± ${(Math.abs(rowTot.diff)/10).toFixed(1)} cm restverschil, maar de segmenten zijn
+          onderling niet gelijk: femur houdt ± ${(restF/10).toFixed(1)} cm en tibia ± ${(restT/10).toFixed(1)} cm restverschil.
+          De knie komt links en rechts daardoor op een <strong>verschillende hoogte</strong> te staan
+          (± ${(restF/10).toFixed(1)} cm). Bespreek dit vooraf met patiënt en ouders: de beenlengte klopt, maar in zit
+          en bij gebogen knie is het verschil zichtbaar. Wil je dit vermijden, verdeel de correctie dan meer gelijkmatig
+          over beide segmenten (verleng en rem in hetzelfde bot, of kies 'beide knie-fyses').</div>`;
+      }
+    }
+    h += `</div></div>`;
+
+    const po0=$("planOutput");
+    po0.innerHTML = h;
+    return;
+  }
+
+  if(treatmentPlan){
+    const p = treatmentPlan;
+    h += `<div class="card"><div class="out-sec"><h3><span class="num">★</span>Behandelplan — ${p.strategy==="epi"?"epifysiodese":p.strategy==="lengthen"?"beenverlenging":"combinatie"}</h3>`;
+    if(p.note){
+      h += `<div class="range-box">${p.note}</div>`;
+    } else {
+      h += `<div class="headline-result">
+        <div class="big">Te corrigeren: ${(p.correction/10).toFixed(1)} cm</div>
+        <div class="sub">In het ${p.segLabel.toLowerCase()} (${p.physisLabel}); verwacht verschil ${(p.diff/10).toFixed(1)} cm,
+        geaccepteerd restverschil ${(p.targetMM/10).toFixed(1)} cm. ${rTotal?`Patiënt uitgegroeid op skeletleeftijd ${monthsToLabel(MATURITY_MONTHS)} (${sex==="girl"?"~14 jr functioneel":"~17 jr"}).`:""}</div></div>`;
+
+      if(p.parts && p.parts.length){
+        h += `<table class="data" style="margin-top:6px"><thead><tr>
+          <th>Verlengingsstap</th><th style="text-align:right">Lengte</th>
+          <th style="text-align:right">Risico</th><th style="text-align:right">Duur distractie</th></tr></thead><tbody>`;
+        p.parts.forEach(part=>{
+          const risk=lengthenRisk(part.mm);
+          h += `<tr><td>PRECICE ${part.bone} — sessie ${part.session}</td>
+            <td class="num">${(part.mm/10).toFixed(1)} cm</td>
+            <td class="num">${risk.label}</td>
+            <td class="num">± ${daysToWeeks(part.durationDays)} wkn</td></tr>`;
+        });
+        h += `</tbody></table>`;
+      }
+
+      if(p.treatsBoth && p.bothSegments){
+        const bs = p.bothSegments;
+        const jt = p.bothJoint;
+        const combTe = p.bothCombinedRecTe;
+        const tooEarly = p.bothCombinedTe < minM;
+        const longB = rTotal?badge(rTotal.longSide,true):"";
+        h += `<table class="data" style="margin-top:10px"><thead><tr>
+            <th>Gecombineerde epifysiodese rond de knie</th>
+            <th style="text-align:right">Eigen optimum</th>
+            <th style="text-align:right">Remt op gez. moment</th></tr></thead><tbody>
+          <tr><td>Distale femur (lange ${rTotal?rTotal.longSide:""} zijde ${longB})</td>
+            <td class="num">${ageLabelSkeletal(bs.femur.recTe, ageCtx)}</td>
+            <td class="num">± ${(jt.femurRemoved/10).toFixed(1)} cm</td></tr>
+          <tr><td>Proximale tibia (lange ${rTotal?rTotal.longSide:""} zijde ${longB})</td>
+            <td class="num">${ageLabelSkeletal(bs.tibia.recTe, ageCtx)}</td>
+            <td class="num">± ${(jt.tibiaRemoved/10).toFixed(1)} cm</td></tr>
+          <tr style="background:var(--accent-soft)"><td><strong>Gezamenlijk moment (beide samen)</strong></td>
+            <td class="num"></td>
+            <td class="num"><strong>${tooEarly?"vanaf ":""}${ageLabelSkeletal(combTe, ageCtx)}</strong></td></tr>
+          </tbody></table>`;
+
+        if(p.bothConflict){
+          // eigen optima liggen te ver uit elkaar: één moment kan beide niet gelijk maken.
+          const fRes = jt.femurFinalDiff, tRes = jt.tibiaFinalDiff;
+          const fTxt = Math.abs(fRes)<5 ? "vrijwel gelijk" :
+            `${(Math.abs(fRes)/10).toFixed(1)} cm ${fRes<0?"omgekeerd (kort been wordt langer)":"restverschil"}`;
+          const tTxt = Math.abs(tRes)<5 ? "vrijwel gelijk" :
+            `${(Math.abs(tRes)/10).toFixed(1)} cm ${tRes<0?"omgekeerd (kort been wordt langer)":"restverschil"}`;
+          h += `<div class="range-box" style="margin-top:10px"><strong>Eén gezamenlijk moment werkt hier niet goed.</strong>
+            Het optimale moment voor de femur (${ageLabelSkeletal(bs.femur.recTe, ageCtx)}) en de tibia
+            (${ageLabelSkeletal(bs.tibia.recTe, ageCtx)}) liggen ver uit elkaar. Rem je beide op één moment
+            (${ageLabelSkeletal(combTe, ageCtx)}), dan komt niet elk segment gelijk uit:
+            <table class="data" style="margin-top:8px;margin-bottom:4px"><thead><tr>
+              <th>Segment</th><th style="text-align:right">Uitkomst op gezamenlijk moment</th></tr></thead><tbody>
+              <tr><td>Femur</td><td class="num"><strong>${fTxt}</strong></td></tr>
+              <tr><td>Tibia</td><td class="num"><strong>${tTxt}</strong></td></tr>
+            </tbody></table>
+            Overweeg daarom <strong>aparte momenten</strong> per fyse (elk op zijn eigen optimum), of behandel
+            <strong>alleen de fyse met het grote verschil</strong> en laat de andere met rust. Bij dit type
+            zeer ongelijk verdeeld verschil is één gecombineerde ingreep zelden de beste keuze.</div>`;
+        } else {
+          h += `<div style="font-size:12px;color:var(--ink-soft);margin-top:6px">Distale femur en proximale tibia worden in één ingreep geremd op het gezamenlijke moment. De eigen optima liggen dicht genoeg bij elkaar om beide segmenten in balans te brengen.</div>`;
+        }
+
+        // ===== uitgeschreven berekening van het gezamenlijke moment =====
+        if(rFemur && rTibia){
+          const Te = combTe;
+          const M_Te = multiplierAt(Te, sex);
+          function remCalc(r, physisConst, pct){
+            const lenAtTe = r.longNow * (r.Mnow_long / M_Te);
+            const remainAfter = lenAtTe * (M_Te - 1);
+            const removed = physisConst * remainAfter;
+            return { lenAtTe, remainAfter, removed };
+          }
+          const fc = remCalc(rFemur, PHYSIS.distalFemur, 71);
+          const tc = remCalc(rTibia, PHYSIS.proximalTibia, 57);
+          h += `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)">Bereken­methode — hoe komt dit gezamenlijke moment tot stand?</summary>
+            <div class="verify" style="margin-top:8px">
+              <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">
+                De tool zoekt het ene moment waarop femur én tibia sámen het kleinste totale restverschil geven. Beide fyses worden op <strong>hetzelfde</strong> moment geremd — hier ${ageLabelSkeletal(Te, ageCtx)} (multiplier ${M_Te.toFixed(3)}, geïnterpoleerd voor de precieze leeftijd — zie de uitleg bij de prognose). De tibia wordt dus doorgerekend op het femur-moment, niet op zijn eigen optimum.
+              </div>
+              <div style="font-family:monospace;font-size:12.5px;color:var(--ink);line-height:1.7">
+                <strong>Distale femur (71%) op ${ageLabelSkeletal(Te, ageCtx)}:</strong><br>
+                lengte op moment = ${(rFemur.longNow/10).toFixed(1)} × (${rFemur.Mnow_long.toFixed(3)} ÷ ${M_Te.toFixed(3)}) = ${(fc.lenAtTe/10).toFixed(1)} cm<br>
+                resterende groei = ${(fc.lenAtTe/10).toFixed(1)} × ${(M_Te-1).toFixed(3)} = ${(fc.remainAfter/10).toFixed(1)} cm<br>
+                remt = 0,71 × ${(fc.remainAfter/10).toFixed(1)} = <strong>${(fc.removed/10).toFixed(1)} cm</strong><br>
+                <br>
+                <strong>Proximale tibia (57%) op ${ageLabelSkeletal(Te, ageCtx)}:</strong><br>
+                lengte op moment = ${(rTibia.longNow/10).toFixed(1)} × (${rTibia.Mnow_long.toFixed(3)} ÷ ${M_Te.toFixed(3)}) = ${(tc.lenAtTe/10).toFixed(1)} cm<br>
+                resterende groei = ${(tc.lenAtTe/10).toFixed(1)} × ${(M_Te-1).toFixed(3)} = ${(tc.remainAfter/10).toFixed(1)} cm<br>
+                remt = 0,57 × ${(tc.remainAfter/10).toFixed(1)} = <strong>${(tc.removed/10).toFixed(1)} cm</strong>
+              </div>
+              <div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;font-style:italic">
+                Omdat de tibia op het femur-moment wordt geremd (en niet op zijn eigen, vroegere optimum), neemt hij minder weg dan wanneer je hem apart zou doen. Dat verklaart een eventueel resterend tibiaverschil.
+              </div>
+            </div></details>`;
+        }
+      }
+      else if(p.epi){
+        const tooEarly = p.epi.tooEarly!=null ? p.epi.tooEarly : (p.epi.Te < minM);
+        const epiAmount = p.epi.epiTargetMM!=null ? p.epi.epiTargetMM : p.epi.removed;
+        h += `<table class="data" style="margin-top:10px"><tbody>
+          <tr><td>Epifysiodese (${p.physisLabel}, lange ${rTotal?rTotal.longSide:""} zijde ${rTotal?badge(rTotal.longSide,true):""})</td>
+            <td class="num">remt gericht ± ${(epiAmount/10).toFixed(1)} cm</td></tr>
+          <tr style="background:var(--accent-soft)"><td><strong>Gerichte leeftijd epifysiodese</strong></td>
+            <td class="num"><strong>${tooEarly?"vanaf ":""}${ageLabelSkeletal(p.epi.Te<minM?minM:p.epi.Te, ageCtx)}</strong></td></tr>
+          </tbody></table>
+          <div style="font-size:12px;color:var(--ink-soft);margin-top:6px">Dit is het gerichte moment waarop het lange been nog precies genoeg groei over heeft om ± ${(epiAmount/10).toFixed(1)} cm via de ${p.physisLabel} weg te nemen.</div>`;
+        // uitgeschreven timing-berekening
+        if(hlRes && hlConst!=null){
+          const Te = p.epi.Te<minM?minM:p.epi.Te;
+          const M_Te = multiplierAt(Te, sex);
+          const lenAtTe = hlRes.longNow * (hlRes.Mnow_long / M_Te);
+          const remainAfter = lenAtTe * (M_Te - 1);
+          const removed = hlConst * remainAfter;
+          const pctLabel = Math.round(hlConst*100);
+          h += `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)">Bereken­methode — hoe komt deze leeftijd tot stand?</summary>
+            <div class="verify" style="margin-top:8px">
+              <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px">De tool zoekt de leeftijd waarop een epifysiodese precies genoeg groei wegneemt. Ter controle, gerekend op het gevonden moment (${ageLabelSkeletal(Te, ageCtx)}, multiplier ${M_Te.toFixed(3)} — geïnterpoleerd voor de precieze leeftijd, zie de uitleg bij de prognose):</div>
+              <div style="font-family:monospace;font-size:12.5px;color:var(--ink);line-height:1.7">
+                lengte lang been op dat moment = lang nu × (M<sub>nu</sub> ÷ M<sub>moment</sub>)<br>
+                &nbsp;&nbsp;= ${(hlRes.longNow/10).toFixed(1)} × (${hlRes.Mnow_long.toFixed(3)} ÷ ${M_Te.toFixed(3)}) = ${(lenAtTe/10).toFixed(1)} cm<br>
+                resterende groei daarna = lengte × (M<sub>moment</sub> − 1) = ${(lenAtTe/10).toFixed(1)} × ${(M_Te-1).toFixed(3)} = ${(remainAfter/10).toFixed(1)} cm<br>
+                fyse neemt weg = ${pctLabel}% × resterende groei = ${(hlConst).toFixed(2)} × ${(remainAfter/10).toFixed(1)} = <strong>${(removed/10).toFixed(1)} cm</strong><br>
+                <span style="color:var(--ink-soft)">De ${p.physisLabel} levert ${pctLabel}% van de groei van dit bot; alleen dát deel rem je met de epifysiodese.</span>
+              </div>
+            </div></details>`;
+        }
+      }
+
+      if(p.strategy==="combined"){
+        const totL = (p.parts||[]).reduce((s,x)=>s+x.mm,0);
+        h += `<div style="font-size:12.5px;color:var(--ink-soft);margin-top:8px">
+          Strategie: ± ${(totL/10).toFixed(1)} cm via ${(p.parts||[]).length} PRECICE-sessie(s) in het korte been, en de
+          resterende ± ${((p.epi?p.epi.epiTargetMM:0)/10).toFixed(1)} cm door het lange been gericht te remmen met een
+          epifysiodese. De exacte volgorde en spreiding van de episodes zijn een klinische afweging in een gespecialiseerd centrum.</div>`;
+      }
+
+      // secundair segment met klinisch relevant verschil (>2 cm) — niet bij 'beide'
+      if(secondary && !p.treatsBoth){
+        const [snm,sr,sseg,slabel]=secondary;
+        h += `<div class="range-box" style="margin-top:12px"><strong>Tweede segment met relevant verschil.</strong>
+          Ook de ${snm.toLowerCase()} heeft een verwacht verschil van ${(Math.abs(sr.expectedDiffNoSurgery)/10).toFixed(1)} cm
+          (> 2 cm). Het verschil zit dus niet in één segment alleen; overweeg of dit segment apart behandeld moet worden.</div>`;
+      }
+
+      p.warnings.forEach(w=>{
+        const danger = /Overcorrectie|⛔|Onmogelijk/.test(w);
+        h += `<div class="range-box${danger?' danger':''}" style="margin-top:8px">${w}</div>`;
+      });
+
+      // ===== EINDOVERZICHT: verwachte lengtes na dit plan, per bot en been =====
+      const lenMM = p.lengthenTotalMM || 0;
+      const epiRemoved = p.epi ? (p.epi.removed||0) : 0;
+      const treatedBone = p.boneName;
+      const both = p.treatsBoth && p.bothSegments;
+
+      // finalRow: bepaalt eindlengtes van korte/lange zijde per segment.
+      // isTreated = dit segment wordt behandeld (verlenging kort + remming lang).
+      function finalRow(label, r, isTreated, segInfo){
+        if(!r) return null;
+        let shortFinal = r.Sm;
+        let longFinal  = r.Lm;
+        if(isTreated){
+          if(both && segInfo){
+            // beide knie-fyses op ÉÉN gezamenlijk moment: gebruik de WERKELIJKE uitkomst die
+            // op dat moment ontstaat (bothJoint), niet de fictie dat elk segment zijn eigen
+            // doel haalt. Zo klopt het restverschil ook als één moment beide niet gelijk maakt.
+            const jt = p.bothJoint;
+            const isFemur = /femur/i.test(label);
+            const finalDiff = isFemur ? (jt?jt.femurFinalDiff:0) : (jt?jt.tibiaFinalDiff:0);
+            shortFinal = r.Sm;
+            longFinal  = r.Sm + finalDiff;   // finalDiff signed: negatief = omgekeerd
+          } else {
+            shortFinal = r.Sm + lenMM;
+            longFinal  = shortFinal + (p.segTargetMM||0);
+          }
+        }
+        return { label, shortFinal, longFinal, diff: longFinal - shortFinal,
+                 shortSide:r.shortSide, longSide:r.longSide, treated:isTreated };
+      }
+      const rowF = finalRow("Femur", rFemur, both || treatedBone==="femur", both?p.bothSegments.femur:null);
+      const rowT = finalRow("Tibia", rTibia, both || treatedBone==="tibia", both?p.bothSegments.tibia:null);
+      let rowTot=null;
+      if(rowF && rowT){
+        const shortTot = rowF.shortFinal + rowT.shortFinal;
+        const longTot  = rowF.longFinal  + rowT.longFinal;
+        rowTot = { label:"Totale been", shortFinal:shortTot, longFinal:longTot,
+                   diff: longTot - shortTot, shortSide:rowF.shortSide, longSide:rowF.longSide };
+      }
+      const sB = rTotal ? badge(rTotal.shortSide,true) : "";
+      const lB = rTotal ? badge(rTotal.longSide,true) : "";
+      function fr(row){
+        if(!row) return "";
+        const hl = row.label==="Totale been" ? ' style="background:var(--accent-soft)"' : '';
+        const dCm = (Math.abs(row.diff)/10).toFixed(1);
+        const flipped = row.diff < -0.5;
+        const diffTxt = flipped ? `${dCm} cm <span style="color:var(--short);font-weight:600">(omgekeerd)</span>` : `${dCm} cm`;
+        const treatedTag = (row.label!=="Totale been" && row.treated) ? " (behandeld)" : "";
+        return `<tr${hl}><td>${row.label}${treatedTag}</td>
+          <td class="num">${fmtLen(row.shortFinal)}</td>
+          <td class="num">${fmtLen(row.longFinal)}</td>
+          <td class="num"><strong>${diffTxt}</strong></td></tr>`;
+      }
+      h += `<h3 style="font-size:14px;margin:22px 0 8px;font-weight:700">Verwachte eindsituatie na dit plan</h3>
+        <table class="data"><thead><tr>
+          <th>Segment</th>
+          <th style="text-align:right">Kort been ${sB}</th>
+          <th style="text-align:right">Lang been ${lB}</th>
+          <th style="text-align:right">Restverschil</th></tr></thead><tbody>
+          ${fr(rowF)}${fr(rowT)}${fr(rowTot)}
+        </tbody></table>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:6px">
+        ${both
+          ? `Beide segmenten worden behandeld: distale femur én proximale tibia worden geremd tot elk gelijk is. Het totale been komt daarmee op ${(Math.abs(rowTot?rowTot.diff:0)/10).toFixed(1)} cm.`
+          : `Alleen het behandelde segment (${treatedBone}) verandert: de korte zijde wordt verlengd, de lange zijde geremd. Een niet-behandeld segment houdt zijn voorspelde lengte — een eventueel restverschil daar blijft dus bestaan en verklaart waarom het totale restverschil groter kan zijn dan dat van het behandelde bot.`}</div>`;
+    }
+    h += `</div></div>`;
+  }
+
+  const po=$("planOutput");
+  po.innerHTML = h;
+}
+
+function fmtLen(mm){ return (mm/10).toFixed(1)+" cm"; }
+function fmtLenRaw(mm){ return (mm/10).toFixed(1); }
+// R/L badge-rondje. side = "rechts" of "links".
+function badge(side, small){
+  const L = side==="rechts" ? "R" : "L";
+  return `<span class="sidebadge ${L}${small?' sm':''}">${L}</span>`;
+}
+
+/* ===================== EVENTS ===================== */
+$("calcBtn").addEventListener("click",run);
+$("planBtn").addEventListener("click",()=>planRun(true));
+$("resetBtn").addEventListener("click",()=>{
+  document.querySelectorAll('input[type=number]').forEach(i=>i.value="");
+  // eerdere-metingen-lijst terugzetten naar één lege rij
+  $("priorMeasures").innerHTML="";
+  addPriorMeasure();
+  $("output").classList.remove("show");
+  $("output").innerHTML="";
+  $("errors").classList.remove("show");
+  $("planStep").style.display="none";
+  $("planOutput").innerHTML="";
+  LAST_CTX=null;
+});
+</script>
+</body>
+</html>
